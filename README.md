@@ -23,7 +23,7 @@ For live runs, inject the key from your secret manager into the host process and
 ## Design
 
 - The dataset commit and HARD-51 SHA-256 are in `ci/settings.json`. The task IDs were fixed before inference. The pilot samples Qt key handling and Open Library search indexing. The ten-task extension is a convenience sample of these two repositories and cannot estimate the full HARD-51 distribution.
-- Official base OCI image digests and Git HEADs are recorded for each run. Node dependencies use `ci/package-lock.json`. The direct Python dependencies are versioned; transitive Python dependencies and the toolbox base image digests need a lock before a publication-grade repeat.
+- Official base OCI image digests and Git HEADs are recorded for each run. Node dependencies use `ci/package-lock.json`. The Python dependency list and toolbox base image digests are pinned. The first official task image was pinned to the digest observed in the verifier controls. The official image digests for the rest of the selected tasks will be recorded as they run.
 - The pilot uses a 19-minute agent budget. The official locked protocol uses 50 minutes, so scores from this pilot would describe a short-budget harness comparison.
 - The relay uses the same output cap and default provider reasoning setting across clients. Differences in history serialization, system prompts and tool schemas are part of the treatment. The pilot's 40-call ceiling and $0.90 conservative inference reserve are per attempt. The six-attempt model reserve is $5.40 at the recorded upper rates. Reconcile GMI billing before launching more jobs.
 - JSON and CSV preserve nulls for missing measurements. Estimated costs use uncached list pricing. The model-call ledger records provider-reported usage when returned. Agent logs and the mini-SWE-agent trajectory support tool failure inspection.
@@ -32,3 +32,5 @@ For live runs, inject the key from your secret manager into the host process and
 `bench.py` and `hard_mode.py` are the original local fixture and Harbor planning tools. Their dry-run output carries no HARD-51 outcome. The Docker workflow above is the maintained live runner.
 
 [Official SWE-bench Pro V2 protocol](https://github.com/scaleapi/SWE-bench_Pro-os/tree/main/v2)
+
+[Technical report](REPORT.md) · [Launch post draft](LAUNCH_X.md)

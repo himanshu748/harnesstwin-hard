@@ -11,7 +11,11 @@ export OPENCODE_DISABLE_LSP_DOWNLOAD=true
 export OPENCODE_DISABLE_DEFAULT_PLUGINS=true
 export OPENCODE_DISABLE_MODELS_FETCH=true
 export LITELLM_LOCAL_MODEL_COST_MAP=true
-mkdir -p "$PI_CODING_AGENT_DIR" /job
+export MSWEA_GLOBAL_CONFIG_DIR="$HOME/mini"
+export MSWEA_SILENT_STARTUP=1
+export MSWEA_CONFIGURED=1
+mkdir -p "$PI_CODING_AGENT_DIR" "$MSWEA_GLOBAL_CONFIG_DIR" /job
+: > "$MSWEA_GLOBAL_CONFIG_DIR/.env"
 cp /run-config/models.json "$PI_CODING_AGENT_DIR/models.json"
 node /run-config/loopback.mjs > /job/relay.log 2>&1 &
 for i in {1..50}; do
@@ -26,7 +30,7 @@ prompt=$(cat /run-config/instruction.md)
 case "$1" in
   pi) args=(pi --print --mode json --no-session --no-extensions --no-skills --no-prompt-templates --provider ht --model "$MODEL_ID" --thinking off "$prompt");;
   opencode) args=(/opt/harness/node_modules/opencode-linux-x64/bin/opencode run --format json --model "ht/$MODEL_ID" -- "$prompt");;
-  mini-swe-agent) args=(mini-swe-agent --yolo --model "openai/$MODEL_ID" --task "$prompt" --output /job/trajectory.json --config /run-config/mini.yaml);;
+  mini-swe-agent) args=(mini-swe-agent --yolo --exit-immediately --model "openai/$MODEL_ID" --task "$prompt" --output /job/trajectory.json --config /run-config/mini.yaml);;
   *) exit 2;;
 esac
 set +e

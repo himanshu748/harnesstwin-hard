@@ -1,0 +1,1 @@
+I’m building HarnessTwin Hard to compare Pi, OpenCode, and mini-SWE-agent on the same GMI Cloud model and SWE-bench Pro V2 HARD-51 tasks. The official verifier controls passed. Live harness scores are pending. https://github.com/himanshu748/harnesstwin-hard

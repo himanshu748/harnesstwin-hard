@@ -1,0 +1,10 @@
+$ bun ./packages/core/script/v1-check.ts
+v1 check: working tree vs c2b10ec (c2b10ec21b6ac2c856b74a08d872af5a54833954)
+
+Changed v1 fields (count, change, examples):
+     1  api cost.input: 0.112 -> 0.14   [gmicloud/deepseek-ai/DeepSeek-V4-Flash]
+     1  api cost.output: 0.224 -> 0.28   [gmicloud/deepseek-ai/DeepSeek-V4-Flash]
+     1  api cost.cache_read: 0.022 -> 0.028   [gmicloud/deepseek-ai/DeepSeek-V4-Flash]
+
+v1 output changed in 3 of 22 views.
+error: script "v1:check" exited with code 1

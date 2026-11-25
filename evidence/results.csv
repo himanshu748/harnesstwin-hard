@@ -1,0 +1,1 @@
+task_id,harness,trial,model,status,resolved,agent_exit,verifier_exit,agent_seconds,verifier_seconds,base_commit,image,patch_sha256,model_calls,model_errors,budget_denials,tool_calls_observed,input_tokens,output_tokens,reasoning_tokens,estimated_inference_usd,actual_inference_usd,actual_compute_usd

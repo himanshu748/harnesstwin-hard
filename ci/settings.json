@@ -13,5 +13,7 @@
   "agent_seconds": 1140,
   "verifier_seconds": 1800,
   "runner": "github-actions-ubuntu-24.04-standard-public-x64",
-  "compute_reserve_usd": 0
+  "compute_reserve_usd": 0,
+  "first_task_image_digest": "b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747",
+  "first_task_base_commit": "fce306d5f184f185b660f35ec2808b6745d57520"
 }

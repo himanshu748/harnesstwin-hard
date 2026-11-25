@@ -118,6 +118,8 @@ def prepare_task(dataset, task, run_dir):
     ).strip()
     if not re.fullmatch(r"ghcr\.io/scaleapi/swe-bench_pro-v2@sha256:[0-9a-f]{64}", image):
         raise ValueError("Missing official image digest")
+    if task == TASKS[0] and image.rsplit(":", 1)[-1] != SETTINGS["first_task_image_digest"]:
+        raise ValueError("Official first-task image digest differs from the verified control")
     return env, read, config, tests, image
 
 
@@ -290,6 +292,8 @@ def main():
                 controls[name] = verify(official_image, patch, tests, control, env)
                 patch.unlink()
             write_json(out / "controls.json", controls)
+            if any(control["base_commit"] != SETTINGS["first_task_base_commit"] for control in controls.values()):
+                raise SystemExit("Official first-task base commit differs from the verified control")
             if [controls[name]["resolved"] for name in ("empty", "oracle")] != [0, 1]:
                 raise SystemExit("Official verifier controls did not match the release gate")
         with (task_dir / "build.log").open("wb") as log:

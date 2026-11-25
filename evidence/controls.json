@@ -1,0 +1,16 @@
+{
+  "empty": {
+    "status": "verified_unresolved",
+    "resolved": 0,
+    "verifier_exit": 1,
+    "verifier_seconds": 11.66,
+    "base_commit": "fce306d5f184f185b660f35ec2808b6745d57520"
+  },
+  "oracle": {
+    "status": "verified_resolved",
+    "resolved": 1,
+    "verifier_exit": 0,
+    "verifier_seconds": 9.15,
+    "base_commit": "fce306d5f184f185b660f35ec2808b6745d57520"
+  }
+}
