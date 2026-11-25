@@ -32,16 +32,16 @@ jobs:
           GMI_API_KEY: ${{ secrets.GMI_API_KEY }}
           GMI_ORGANIZATION_ID: ${{ vars.GMI_ORGANIZATION_ID }}
           MODE: ${{ inputs.mode }}
-        run: python3 ci/run.py "$MODE" --dataset official --out evidence
+        run: python3 ci/run.py "$MODE" --dataset official --out run-evidence
       - name: Normalize evidence permissions
         if: always()
         run: |
-          if [ -d evidence ]; then
-            sudo find evidence -mindepth 1 ! -type d ! -type f -delete
-            sudo find evidence -type f -exec chmod a+r {} +
-            sudo find evidence -type d -exec chmod a+rx {} +
+          if [ -d run-evidence ]; then
+            sudo find run-evidence -mindepth 1 ! -type d ! -type f -delete
+            sudo find run-evidence -type f -exec chmod a+r {} +
+            sudo find run-evidence -type d -exec chmod a+rx {} +
           fi
-          for result in evidence/controls.json evidence/smoke.json evidence/inventory.json evidence/results.json; do
+          for result in run-evidence/controls.json run-evidence/smoke.json run-evidence/inventory.json run-evidence/results.json; do
             if [ -f "$result" ]; then
               echo "### $result" >> "$GITHUB_STEP_SUMMARY"
               echo '```json' >> "$GITHUB_STEP_SUMMARY"
@@ -55,14 +55,14 @@ jobs:
         with:
           name: harnesstwin-${{ inputs.mode }}-${{ github.run_id }}
           path: |
-            evidence/**/results.*
-            evidence/**/inventory.json
-            evidence/**/controls.json
-            evidence/**/smoke.json
-            evidence/**/plan.json
-            evidence/**/agent.log
-            evidence/**/build.log
-            evidence/**/usage.jsonl
-            evidence/**/agent/**
-            evidence/**/verifier/**
+            run-evidence/**/results.*
+            run-evidence/**/inventory.json
+            run-evidence/**/controls.json
+            run-evidence/**/smoke.json
+            run-evidence/**/plan.json
+            run-evidence/**/agent.log
+            run-evidence/**/build.log
+            run-evidence/**/usage.jsonl
+            run-evidence/**/agent/**
+            run-evidence/**/verifier/**
           retention-days: 14

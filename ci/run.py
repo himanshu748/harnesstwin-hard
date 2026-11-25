@@ -232,7 +232,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["inventory", "controls", "smoke", "triad", "second", "pilot", "plan"])
     parser.add_argument("--dataset", type=Path)
-    parser.add_argument("--out", type=Path, default=Path("evidence"))
+    parser.add_argument("--out", type=Path, default=Path("run-evidence"))
     ns = parser.parse_args()
     out = ns.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
