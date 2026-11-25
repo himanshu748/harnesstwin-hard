@@ -13,9 +13,21 @@
 
 ![Bar chart comparing required tests passed by the empty and reference patches](evidence/controls.svg)
 
-Both controls used fresh official qutebrowser containers at repository commit `fce306d5f184f185b660f35ec2808b6745d57520`. The official Docker image digest was `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. The runner first exposed two evidence-handling issues, one writing files under the official image's non-root user and the other uploading verifier files created with restrictive permissions. The final control run verified both outcomes and uploaded the logs successfully.
+All 20 local HarnessTwin tests passed. Both controls used fresh official qutebrowser containers at repository commit `fce306d5f184f185b660f35ec2808b6745d57520`. The official Docker image digest was `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. The runner first exposed two evidence-handling issues, one writing files under the official image's non-root user and the other uploading verifier files created with restrictive permissions. The final control run verified both outcomes and uploaded the logs successfully.
 
 [Successful control job and raw evidence](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45702666035)
+
+## Isolated harness smoke test
+
+| Harness | Reached the relay | Requests observed by the local relay |
+| --- | --- | ---: |
+| Pi 0.73.1 | Yes | 1 |
+| OpenCode 1.19.6 | Yes | 2 |
+| mini-SWE-agent 2.4.6 | Yes | 5 |
+
+Each CLI launched inside a separate container on the official first-task image. The relay deliberately returned HTTP 418 and sent zero upstream requests. This checks the client configuration and request path. Counts reflect client retry behavior against the diagnostic response and carry no benchmark or performance meaning.
+
+[Successful cloud smoke run](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45704871473)
 
 ## Pilot design
 
@@ -39,8 +51,10 @@ The estimate reserves $0.90 per attempt using GMI's published GLM-5.3 Flash list
 
 ## Upstream contribution
 
-[Models.dev PR #14632](https://github.com/anomalyco/models.dev/pull/14632) corrects the published list prices for the existing `deepseek-ai/DeepSeek-V4-Flash` GMI entry. It changes input from $0.112 to $0.14, cached input from $0.022 to $0.028, and output from $0.224 to $0.28 per million tokens. OpenCode consumes this catalog. The existing runtime model discovery PR [OpenCode #60673](https://github.com/anomalyco/opencode/pull/60673) and catalog additions PR [Models.dev #12148](https://github.com/anomalyco/models.dev/pull/12148) were open at the time of review.
+[Models.dev PR #14632](https://github.com/anomalyco/models.dev/pull/14632) updates the advertised promotional prices for the existing `deepseek-ai/DeepSeek-V4-Flash` GMI entry. It changes input from $0.112 to $0.091, cached input from $0.022 to $0.0182, and output from $0.224 to $0.182 per million tokens. The TOML header records the regular prices and that GMI published no promotion end date. The figures were checked against the public GMI model card. OpenCode consumes this catalog. The two earlier PRs were open at the time of review. OpenCode #60673 adds runtime discovery. Its reviews examined reasoning-field preservation, catalog template matching and the handling of non-chat models. Models.dev #12148 proposes 69 catalog additions. Its review called for explicit v1 approval, provider-specific reasoning controls and context-based pricing tiers. The existing DeepSeek V4 Flash entry was outside that PR’s edits.
+
+[OpenCode #60673](https://github.com/anomalyco/opencode/pull/60673) · [Models.dev #12148](https://github.com/anomalyco/models.dev/pull/12148) · [Public GMI model card](https://console.gmicloud.ai/model/llm/deepseek-v4-flash/16e9ccd2-84e0-43b4-9d9a-5cb31b3341a2)
 
 `bun validate` passed. The v1 check reported exactly the three intended pricing changes for one model. The core suite had 976 passes and one LLM Gateway test failure, reproduced on the clean upstream revision. The upstream CI ran catalog validation and SDK tests successfully. Maintainer approval of the v1 data change is pending, and GMI Cloud reward eligibility is unconfirmed.
 
-[Upstream validation job](https://github.com/anomalyco/models.dev/actions/runs/45703110571)
+[Upstream validation job](https://github.com/anomalyco/models.dev/actions/runs/45704510892)

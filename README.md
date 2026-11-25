@@ -4,7 +4,7 @@ A paired comparison of Pi, OpenCode and mini-SWE-agent on the official SWE-bench
 
 ## Run
 
-Use the **HARD-51 benchmark** workflow on the default GitHub branch. The GitHub-hosted standard Linux runner hosts Docker. Use `controls` to verify that an empty patch fails and that the official reference patch passes. Use `inventory` to list the exact serving IDs from the authorized GMI account. Configure the repository's Actions secret `GMI_API_KEY` before invoking any mode that uses the model. `GMI_ORGANIZATION_ID` is an optional Actions variable for multi-organization accounts.
+Use the **HARD-51 benchmark** workflow on the default GitHub branch. The GitHub-hosted standard Linux runner hosts Docker. Use `smoke` to check whether the three clients can reach the offline relay. Use `controls` to verify that an empty patch fails and that the official reference patch passes. Use `inventory` to list the exact serving IDs from the authorized GMI account. Configure the repository's Actions secret `GMI_API_KEY` before invoking any mode that uses the model. `GMI_ORGANIZATION_ID` is an optional Actions variable for multi-organization accounts.
 
 Use `triad` to run the first task through all three harnesses, and `second` for the other task. `pilot` runs both tasks in one job. Choose either the single pilot job or the two smaller jobs to avoid duplicate charges. Download the evidence bundle from Actions before the 14-day retention period ends.
 

@@ -1,0 +1,20 @@
+{
+  "pi": {
+    "endpoint_reached": true,
+    "probe_requests": 1,
+    "duration_seconds": 2.06,
+    "upstream_requests": 0
+  },
+  "opencode": {
+    "endpoint_reached": true,
+    "probe_requests": 2,
+    "duration_seconds": 3.99,
+    "upstream_requests": 0
+  },
+  "mini-swe-agent": {
+    "endpoint_reached": true,
+    "probe_requests": 5,
+    "duration_seconds": 30.91,
+    "upstream_requests": 0
+  }
+}
