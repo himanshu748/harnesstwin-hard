@@ -173,7 +173,7 @@ def totals(usage_file):
     }
 
 
-def run_agent(image, official_image, harness, config, tests, run_dir, env):
+def run_agent(image, official_image, harness, config, tests, run_dir, env, *, probe=False):
     traces = run_dir / "agent"
     traces.mkdir()
     traces.chmod(0o777)
@@ -181,23 +181,27 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env):
     budget = Budget(SETTINGS["model"], SETTINGS["context_ceiling"], SETTINGS["max_completion_tokens_per_call"],
                     SETTINGS["input_usd_per_million_upper_rate"], SETTINGS["output_usd_per_million_upper_rate"],
                     SETTINGS["attempt_cap_usd"], SETTINGS["max_calls"], SETTINGS["reasoning_effort"], usage_file)
+    agent_limit = 30 if probe else SETTINGS["agent_seconds"]
     start = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="ht-") as socket_dir:
         Path(socket_dir).chmod(0o755)
-        with Relay(Path(socket_dir) / "gmi.sock", budget) as relay:
+        with Relay(Path(socket_dir) / "gmi.sock", budget, probe=probe) as relay:
             server = threading.Thread(target=relay.serve_forever, daemon=True)
             server.start()
             try:
-                code = container(image, ["/run-config/agent.sh", harness, SETTINGS["agent_seconds"]],
+                code = container(image, ["/run-config/agent.sh", harness, agent_limit],
                                  mounts=[(socket_dir, "/inference", "ro"), (config, "/run-config", "ro"),
                                          (traces, "/job", "rw")],
                                  cpus=env["cpus"], memory=env["memory_mb"],
-                                 log=run_dir / "agent.log", timeout=SETTINGS["agent_seconds"] + 90,
+                                 log=run_dir / "agent.log", timeout=agent_limit + 90,
                                  extra=["-e", "MODEL_ID=" + SETTINGS["model"]])
             finally:
                 relay.shutdown()
                 server.join()
     duration = round(time.monotonic() - start, 2)
+    if probe:
+        return {"endpoint_reached": budget.calls > 0, "probe_requests": budget.calls,
+                "duration_seconds": duration, "upstream_requests": 0}
     patch = traces / "model.patch"
     exit_file = traces / "agent-exit.txt"
     agent_base_path = traces / "base.txt"
@@ -224,7 +228,7 @@ def save_results(out, results):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["inventory", "controls", "triad", "second", "pilot", "plan"])
+    parser.add_argument("mode", choices=["inventory", "controls", "smoke", "triad", "second", "pilot", "plan"])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("evidence"))
     ns = parser.parse_args()
@@ -270,7 +274,7 @@ def main():
         return
     if ns.mode != "controls" and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
         raise SystemExit("Planned spend reaches mission ceiling")
-    results = []
+    results, probes = [], {}
     for ix, task in enumerate(selected):
         task_dir = out / f"task-{ix + 1:02}"
         task_dir.mkdir()
@@ -296,11 +300,17 @@ def main():
         for _, harness in (item for item in attempts if item[0] == task):
             run_dir = task_dir / harness
             run_dir.mkdir()
-            row = run_agent(image, official_image, harness, config, tests, run_dir, env)
+            row = run_agent(image, official_image, harness, config, tests, run_dir, env, probe=ns.mode == "smoke")
+            if ns.mode == "smoke":
+                probes[harness] = row
+                write_json(out / "smoke.json", probes)
+                continue
             results.append(dict(task_id=task, harness=harness, trial=1, model=SETTINGS["model"],
                                 image=official_image, **row))
             save_results(out, results)
         shutil.rmtree(tests)
+    if ns.mode == "smoke" and not all(row["endpoint_reached"] for row in probes.values()):
+        raise SystemExit("One or more harnesses could not reach the offline relay")
 
 
 if __name__ == "__main__":

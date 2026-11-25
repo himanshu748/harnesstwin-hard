@@ -7,7 +7,7 @@ on:
         required: true
         default: controls
         type: choice
-        options: [inventory, controls, triad, second, pilot]
+        options: [inventory, controls, smoke, triad, second, pilot]
 permissions:
   contents: read
 concurrency:
@@ -41,12 +41,12 @@ jobs:
             sudo find evidence -type f -exec chmod a+r {} +
             sudo find evidence -type d -exec chmod a+rx {} +
           fi
-          for result in evidence/controls.json evidence/inventory.json evidence/results.json; do
+          for result in evidence/controls.json evidence/smoke.json evidence/inventory.json evidence/results.json; do
             if [ -f "$result" ]; then
               echo "### $result" >> "$GITHUB_STEP_SUMMARY"
-              echo "\`\`\`json" >> "$GITHUB_STEP_SUMMARY"
+              echo '```json' >> "$GITHUB_STEP_SUMMARY"
               cat "$result" >> "$GITHUB_STEP_SUMMARY"
-              echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
             fi
           done
       - name: Upload run evidence
@@ -58,6 +58,7 @@ jobs:
             evidence/**/results.*
             evidence/**/inventory.json
             evidence/**/controls.json
+            evidence/**/smoke.json
             evidence/**/plan.json
             evidence/**/agent.log
             evidence/**/build.log

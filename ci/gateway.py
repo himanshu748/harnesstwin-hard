@@ -94,8 +94,9 @@ class Budget:
 
 
 class Relay(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
-    def __init__(self, socket_path, budget):
+    def __init__(self, socket_path, budget, *, probe=False):
         self.budget = budget
+        self.probe = probe
         super().__init__(str(socket_path), Handler)
         Path(socket_path).chmod(0o666)
 
@@ -132,6 +133,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if call is None:
             self.error(429, "Benchmark request or spending cap reached")
             return
+        if self.server.probe:
+            budget.finish(call, None, 418, set(), 0)
+            self.error(418, "Offline request observed. No upstream model call was made.")
+            return
         start = time.monotonic()
         status, usage, tool_names, provider_model = 502, None, set(), None
         body.pop("max_completion_tokens", None)
@@ -160,9 +165,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     provider_model = event.get("model") or provider_model
                     for choice in event.get("choices") or []:
                         message = choice.get("delta") or choice.get("message") or {}
-                        for tool in message.get("tool_calls") or []:
+                        for index, tool in enumerate(message.get("tool_calls") or []):
                             if name := (tool.get("function") or {}).get("name"):
-                                tool_names.add((choice.get("index", 0), tool.get("index", 0), name))
+                                tool_names.add((choice.get("index", 0), tool.get("index", index), name))
                     self.wfile.write(line)
                     self.wfile.flush()
         except urllib.error.HTTPError as exc:
