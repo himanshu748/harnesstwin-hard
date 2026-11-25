@@ -8,6 +8,7 @@ import hashlib
 import json
 import re
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
@@ -120,6 +121,14 @@ def prepare_task(dataset, task, run_dir):
     return env, read, config, tests, image
 
 
+def regular_file(path, max_bytes=32_000_000):
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return False
+    return stat.S_ISREG(info.st_mode) and info.st_size <= max_bytes
+
+
 def verify(image, patch, tests, run_dir, env):
     evidence = run_dir / "verifier"
     evidence.mkdir()
@@ -131,7 +140,7 @@ def verify(image, patch, tests, run_dir, env):
     ], cpus=env["cpus"], memory=env["memory_mb"], log=evidence / "stdout.log",
         timeout=SETTINGS["verifier_seconds"])
     reward = evidence / "reward.txt"
-    value = reward.read_text().strip() if reward.exists() else None
+    value = reward.read_text().strip() if regular_file(reward, 100) else None
     log = (evidence / "stdout.log").read_text(errors="replace").lower()
     # An official reward=0 covers both test failures and verifier setup failures.
     # Attribute a failure only when the official verifier emitted its test verdict.
@@ -146,7 +155,7 @@ def verify(image, patch, tests, run_dir, env):
     base = evidence / "base.txt"
     return dict(status=status, resolved=resolved, verifier_exit=code,
                 verifier_seconds=round(time.monotonic() - start, 2),
-                base_commit=base.read_text().strip() if base.exists() else None)
+                base_commit=base.read_text().strip() if regular_file(base, 100) else None)
 
 
 def totals(usage_file):
@@ -191,13 +200,15 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env):
     duration = round(time.monotonic() - start, 2)
     patch = traces / "model.patch"
     exit_file = traces / "agent-exit.txt"
-    agent_exit = int(exit_file.read_text()) if exit_file.is_file() else code
+    agent_base_path = traces / "base.txt"
+    exit_value = exit_file.read_text().strip() if regular_file(exit_file, 12) else ""
+    agent_exit = int(exit_value) if exit_value.isdigit() else code
     row = dict(agent_exit=agent_exit, agent_seconds=duration, model_calls=budget.calls,
                model_errors=budget.errors, budget_denials=budget.denied, **totals(usage_file))
-    if code or not patch.is_file() or not budget.calls or budget.errors == budget.calls:
+    if code or not regular_file(patch) or not regular_file(agent_base_path, 100) or not budget.calls or budget.errors == budget.calls:
         return row | dict(status="agent_or_inference_error", resolved=None)
     outcome = verify(official_image, patch, tests, run_dir, env)
-    agent_base = (traces / "base.txt").read_text().strip()
+    agent_base = agent_base_path.read_text().strip()
     if agent_base != outcome["base_commit"]:
         outcome.update(status="base_commit_mismatch", resolved=None)
     return row | outcome | {"patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest()}
