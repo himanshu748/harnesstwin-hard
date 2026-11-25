@@ -1,0 +1,3 @@
+{
+  "prompt": "In export.py, `export_csv` incorrectly truncates filtered records after the first page. Fix it so all records matching the given status are exported as CSV, in original order, with one header and no extra rows. Keep the existing signature and avoid changing callers."
+}

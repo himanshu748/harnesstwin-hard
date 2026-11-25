@@ -1,0 +1,51 @@
+name: HARD-51 benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Execution phase
+        required: true
+        default: controls
+        type: choice
+        options: [inventory, controls, triad, second, pilot]
+permissions:
+  contents: read
+concurrency:
+  group: harnesstwin-hard51
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Fetch the pinned task definitions
+        if: inputs.mode != 'inventory'
+        run: |
+          git init official
+          git -C official remote add origin https://github.com/scaleapi/SWE-bench_Pro-os.git
+          git -C official fetch --depth=1 origin 66f92766bba642462d4bbe5479e83f91f9211862
+      - name: Run the selected phase
+        env:
+          GMI_API_KEY: ${{ secrets.GMI_API_KEY }}
+          GMI_ORGANIZATION_ID: ${{ vars.GMI_ORGANIZATION_ID }}
+          MODE: ${{ inputs.mode }}
+        run: python3 ci/run.py "$MODE" --dataset official --out evidence
+      - name: Upload run evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harnesstwin-${{ inputs.mode }}-${{ github.run_id }}
+          path: |
+            evidence/**/results.*
+            evidence/**/inventory.json
+            evidence/**/controls.json
+            evidence/**/plan.json
+            evidence/**/agent.log
+            evidence/**/build.log
+            evidence/**/usage.jsonl
+            evidence/**/agent/**
+            evidence/**/verifier/**
+          retention-days: 14

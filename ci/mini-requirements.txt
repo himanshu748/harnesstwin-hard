@@ -1,0 +1,4 @@
+mini-swe-agent==2.4.6
+litellm[mcp]==1.83.14
+orjson==3.11.6
+fastapi==0.128.0

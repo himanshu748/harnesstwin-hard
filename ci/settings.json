@@ -1,0 +1,17 @@
+{
+  "dataset_revision": "66f92766bba642462d4bbe5479e83f91f9211862",
+  "hard51_sha256": "6e35e84708a26443e1746ae928940555a3188654c90f3a2eb691f4f699482bd1",
+  "model": "zai-org/GLM-5.3-Flash",
+  "context_ceiling": 1048576,
+  "max_completion_tokens_per_call": 8192,
+  "max_calls": 40,
+  "reasoning_effort": null,
+  "input_usd_per_million_upper_rate": 0.15,
+  "output_usd_per_million_upper_rate": 0.5,
+  "attempt_cap_usd": 0.9,
+  "mission_cap_usd": 9.5,
+  "agent_seconds": 1140,
+  "verifier_seconds": 1800,
+  "runner": "github-actions-ubuntu-24.04-standard-public-x64",
+  "compute_reserve_usd": 0
+}

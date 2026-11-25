@@ -1,0 +1,3 @@
+{
+  "prompt": "In utils.py, fix `slugify` so it normalizes runs of whitespace and punctuation to a single hyphen, strips leading/trailing hyphens, and handles ASCII characters case-insensitively. Preserve existing function signature. Do not delete tests."
+}

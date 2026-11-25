@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+opencode.json
+hard-results/
+results/
+SWE-bench_Pro-os/
