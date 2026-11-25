@@ -123,6 +123,7 @@ def prepare_task(dataset, task, run_dir):
 def verify(image, patch, tests, run_dir, env):
     evidence = run_dir / "verifier"
     evidence.mkdir()
+    evidence.chmod(0o777)
     start = time.monotonic()
     code = container(image, ["/harnesstwin-verify.sh"], mounts=[
         (CI / "verify.sh", "/harnesstwin-verify.sh", "ro"), (tests, "/tests", "ro"),
@@ -166,12 +167,14 @@ def totals(usage_file):
 def run_agent(image, official_image, harness, config, tests, run_dir, env):
     traces = run_dir / "agent"
     traces.mkdir()
+    traces.chmod(0o777)
     usage_file = run_dir / "usage.jsonl"
     budget = Budget(SETTINGS["model"], SETTINGS["context_ceiling"], SETTINGS["max_completion_tokens_per_call"],
                     SETTINGS["input_usd_per_million_upper_rate"], SETTINGS["output_usd_per_million_upper_rate"],
                     SETTINGS["attempt_cap_usd"], SETTINGS["max_calls"], SETTINGS["reasoning_effort"], usage_file)
     start = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="ht-") as socket_dir:
+        Path(socket_dir).chmod(0o755)
         with Relay(Path(socket_dir) / "gmi.sock", budget) as relay:
             server = threading.Thread(target=relay.serve_forever, daemon=True)
             server.start()
