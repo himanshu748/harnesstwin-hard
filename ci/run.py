@@ -217,6 +217,9 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
     agent_base = agent_base_path.read_text().strip()
     if agent_base != outcome["base_commit"]:
         outcome.update(status="base_commit_mismatch", resolved=None)
+    elif agent_exit not in (0, 124):
+        outcome.update(verifier_status=outcome["status"], verifier_resolved=outcome["resolved"],
+                       status="agent_error", resolved=None)
     return row | outcome | {"patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest()}
 
 
@@ -230,14 +233,14 @@ def save_results(out, results):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["inventory", "controls", "smoke", "triad", "second", "pilot", "plan"])
+    parser.add_argument("mode", choices=["inventory", "controls", "smoke", "triad", "second", "pilot", "resume-pilot", "plan"])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("run-evidence"))
     ns = parser.parse_args()
     out = ns.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     save_results(out, [])
-    if ns.mode in {"inventory", "triad", "second", "pilot"}:
+    if ns.mode in {"inventory", "triad", "second", "pilot", "resume-pilot"}:
         try:
             models = inventory()
         except urllib.error.HTTPError as exc:
@@ -259,12 +262,15 @@ def main():
             raise SystemExit("The authenticated model context exceeds the configured cost ceiling")
     first_two = TASKS[:2]
     selected = {
-        "plan": TASKS, "pilot": first_two, "second": TASKS[1:2],
+        "plan": TASKS, "pilot": first_two, "resume-pilot": first_two, "second": TASKS[1:2],
     }.get(ns.mode, TASKS[:1])
     attempts = [
         (task, HARNESSES[(TASKS.index(task) + shift) % len(HARNESSES)])
         for task in selected for shift in range(len(HARNESSES))
     ]
+    if ns.mode == "resume-pilot":
+        attempts = [(task, harness) for task, harness in attempts
+                    if task != first_two[0] or harness == "mini-swe-agent"]
     planned_cost = Decimal(str(SETTINGS["attempt_cap_usd"])) * len(attempts) + Decimal(str(SETTINGS["compute_reserve_usd"]))
     if not ns.dataset:
         parser.error("--dataset is required")
@@ -304,6 +310,7 @@ def main():
         if ns.mode == "controls":
             break
         for _, harness in (item for item in attempts if item[0] == task):
+            print(f"Starting {harness} on preregistered task {TASKS.index(task) + 1}", flush=True)
             run_dir = task_dir / harness
             run_dir.mkdir()
             row = run_agent(image, official_image, harness, config, tests, run_dir, env, probe=ns.mode == "smoke")
@@ -314,6 +321,9 @@ def main():
             results.append(dict(task_id=task, harness=harness, trial=1, model=SETTINGS["model"],
                                 image=official_image, **row))
             save_results(out, results)
+            print(f"{harness}: {row['status']}", flush=True)
+            if ns.mode == "resume-pilot" and task == first_two[0] and row["resolved"] is None:
+                raise SystemExit("Mini-SWE-agent retry needs diagnosis before the second task")
         shutil.rmtree(tests)
     if ns.mode == "smoke" and not all(row["endpoint_reached"] for row in probes.values()):
         raise SystemExit("One or more harnesses could not reach the offline relay")

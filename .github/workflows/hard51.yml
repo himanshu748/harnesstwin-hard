@@ -7,7 +7,7 @@ on:
         required: true
         default: controls
         type: choice
-        options: [inventory, controls, smoke, triad, second, pilot]
+        options: [inventory, controls, smoke, triad, second, pilot, resume-pilot]
 permissions:
   contents: read
 concurrency:

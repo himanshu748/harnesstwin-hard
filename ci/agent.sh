@@ -14,6 +14,8 @@ export LITELLM_LOCAL_MODEL_COST_MAP=true
 export MSWEA_GLOBAL_CONFIG_DIR="$HOME/mini"
 export MSWEA_SILENT_STARTUP=1
 export MSWEA_CONFIGURED=1
+# The host relay meters every GMI request, including models absent from LiteLLM.
+export MSWEA_COST_TRACKING=ignore_errors
 mkdir -p "$PI_CODING_AGENT_DIR" "$MSWEA_GLOBAL_CONFIG_DIR" /job
 : > "$MSWEA_GLOBAL_CONFIG_DIR/.env"
 cp /run-config/models.json "$PI_CODING_AGENT_DIR/models.json"
