@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "usage_date_displayed": "11/26/2026",
+  "matched_input_tokens_displayed": "8.2K",
+  "matched_cached_input_tokens_displayed": "3.8K",
+  "matched_output_tokens_displayed": 32,
+  "discount_displayed": "35% off",
+  "amount_displayed_usd": "0.00",
+  "amount_precision": "cents",
+  "pricing_probe_run": "https://github.com/himanshu748/harnesstwin-hard/actions/runs/45748050866",
+  "upstream_pr": "https://github.com/anomalyco/models.dev/pull/14632",
+  "estimate_usd_at_advertised_rates": "0.000471198",
+  "estimate_assumption": "No cache hits on the first response where cached_tokens was absent."
+}

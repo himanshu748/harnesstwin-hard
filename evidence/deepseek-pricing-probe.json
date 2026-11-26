@@ -1,0 +1,23 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash",
+  "account_inventory_confirmed": true,
+  "requests": [
+    {
+      "started_utc": "2026-11-26T03:18:32+00:00",
+      "input_tokens": 4093,
+      "output_tokens": 16
+    },
+    {
+      "started_utc": "2026-11-26T03:18:33+00:00",
+      "input_tokens": 4093,
+      "output_tokens": 16,
+      "cached_input_tokens": 3840
+    }
+  ],
+  "raw_api_pricing": {
+    "prompt": "0.000000140",
+    "completion": "0.000000280",
+    "input_cache_read": "0.000000028",
+    "input_cache_write": "0"
+  }
+}

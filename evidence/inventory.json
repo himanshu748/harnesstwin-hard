@@ -1,0 +1,11 @@
+{
+  "model_count": 71,
+  "matching_ids": [
+    "deepseek-ai/DeepSeek-V4.1-Flash",
+    "deepseek-ai/deepseek-v4.1-flash-1017",
+    "moonshotai/kimi-k3",
+    "moonshotai/kimi-k3.1-pro",
+    "zai-org/GLM-5.3",
+    "zai-org/GLM-5.3-Flash"
+  ]
+}

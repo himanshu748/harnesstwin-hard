@@ -233,7 +233,10 @@ def save_results(out, results):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["inventory", "controls", "smoke", "triad", "second", "pilot", "resume-pilot", "plan"])
+    parser.add_argument("mode", choices=[
+        "inventory", "controls", "controls-second", "smoke", "triad", "second",
+        "pilot", "resume-pilot", "plan",
+    ])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("run-evidence"))
     ns = parser.parse_args()
@@ -261,8 +264,10 @@ def main():
         if (ctx := model.get("context_length")) and (not isinstance(ctx, int) or ctx > SETTINGS["context_ceiling"]):
             raise SystemExit("The authenticated model context exceeds the configured cost ceiling")
     first_two = TASKS[:2]
+    control_run = ns.mode in {"controls", "controls-second"}
     selected = {
-        "plan": TASKS, "pilot": first_two, "resume-pilot": first_two, "second": TASKS[1:2],
+        "plan": TASKS, "pilot": first_two, "resume-pilot": first_two,
+        "second": TASKS[1:2], "controls-second": TASKS[1:2],
     }.get(ns.mode, TASKS[:1])
     attempts = [
         (task, HARNESSES[(TASKS.index(task) + shift) % len(HARNESSES)])
@@ -282,7 +287,7 @@ def main():
     write_json(out / "plan.json", {"settings": SETTINGS, "mode": ns.mode, "attempts": attempts})
     if ns.mode == "plan":
         return
-    if ns.mode != "controls" and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
+    if not control_run and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
         raise SystemExit("Planned spend reaches mission ceiling")
     results, probes = [], {}
     for ix, task in enumerate(selected):
@@ -290,7 +295,7 @@ def main():
         task_dir.mkdir()
         env, read, config, tests, official_image = prepare_task(ns.dataset, task, task_dir)
         image = "harnesstwin-agent:" + str(ix + 1)
-        if ns.mode == "controls":
+        if control_run:
             controls = {}
             for name, patch_data in [("empty", b""), ("oracle", read("solution/gold_patch.diff"))]:
                 control = task_dir / name
@@ -300,14 +305,16 @@ def main():
                 controls[name] = verify(official_image, patch, tests, control, env)
                 patch.unlink()
             write_json(out / "controls.json", controls)
-            if any(control["base_commit"] != SETTINGS["first_task_base_commit"] for control in controls.values()):
+            if task == TASKS[0] and any(
+                control["base_commit"] != SETTINGS["first_task_base_commit"] for control in controls.values()
+            ):
                 raise SystemExit("Official first-task base commit differs from the verified control")
             if [controls[name]["resolved"] for name in ("empty", "oracle")] != [0, 1]:
                 raise SystemExit("Official verifier controls did not match the release gate")
         with (task_dir / "build.log").open("wb") as log:
             docker("build", "--platform", "linux/amd64", "--build-arg", "OFFICIAL_IMAGE=" + official_image,
                    "-t", image, CI, stdout=log, stderr=subprocess.STDOUT, timeout=1500, check=True)
-        if ns.mode == "controls":
+        if control_run:
             break
         for _, harness in (item for item in attempts if item[0] == task):
             print(f"Starting {harness} on preregistered task {TASKS.index(task) + 1}", flush=True)

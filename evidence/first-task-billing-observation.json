@@ -1,0 +1,14 @@
+{
+  "model": "zai-org/GLM-5.3-Flash",
+  "workflow_run": "https://github.com/himanshu748/harnesstwin-hard/actions/runs/45747712965",
+  "gateway_reported_input_tokens": 199586,
+  "gateway_reported_output_tokens": 21987,
+  "gateway_reported_cached_input_tokens": 149248,
+  "includes_excluded_integration_attempt": true,
+  "provider_console_input_tokens_displayed": "199.6K",
+  "provider_console_output_tokens_displayed": "22K",
+  "provider_console_cached_input_tokens_displayed": "149.2K",
+  "provider_console_discount": "50% off",
+  "provider_console_amount_usd_rounded_to_cents": "0.01",
+  "derived_estimate_usd_at_advertised_discount_and_cache_rates": "0.01151082"
+}
