@@ -8,6 +8,8 @@ The current comparison schedules one attempt per harness on every official HARD-
 
 Using the first 32K GLM-5.3 task's token usage and cache mix as a pricing scenario, one full Flash sweep would cost about $13.17 at list rates. Real costs depend on Flash behavior, the provider's native completion behavior and cross-task cache reuse. Standard public GitHub runner compute is free.
 
+At the 11:33 IST checkpoint, the first three Pi attempts had official verdicts. Pi resolved qutebrowser task 1 and Open Library task 7. Ansible task 13 was unresolved. Those three attempts used 53,569, 69,635 and 55,252 output tokens, respectively, and cost $0.274267 at list rates with reported cache reads. They are still awaiting the corresponding OpenCode and mini-SWE-agent verdicts. [Live checkpoint data](evidence/flash-live-checkpoint.json)
+
 [Full Flash workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45763364797) · [Flash settings](ci/hard-flash-settings.json) · [GMI model pricing](https://www.gmicloud.ai/en/blog/chinese-language-agents-glm-5-3-managed-environment)
 
 This experiment measures how the harness changes task resolution, tool use, runtime and token use when model serving, tasks and resource budgets are held fixed. The pilot uses `zai-org/GLM-5.3-Flash` through GMI Cloud. The authenticated inventory also returned `zai-org/GLM-5.3`, both DeepSeek V4.1 Flash identifiers in the saved inventory, and `moonshotai/kimi-k3`.

@@ -1,0 +1,15 @@
+{
+  "run": 45763364797,
+  "observed_at": "2026-11-26T11:33:00+05:30",
+  "source": "GitHub Actions live verifier and request-usage summary",
+  "trial": 1,
+  "model": "zai-org/GLM-5.3-Flash",
+  "relay_completion_cap": null,
+  "planned_task_count": 51,
+  "planned_attempt_count": 153,
+  "observations": [
+    {"task_number": 1, "repository": "qutebrowser", "harness": "pi", "resolved": 1, "model_calls": 40, "input_tokens": 2161119, "output_tokens": 53569, "reasoning_tokens": 42505, "agent_seconds": 799.23, "list_with_cache_usd": "0.096037790", "job": 139718356873},
+    {"task_number": 7, "repository": "Open Library", "harness": "pi", "resolved": 1, "model_calls": 40, "input_tokens": 1924637, "output_tokens": 69635, "reasoning_tokens": 61630, "agent_seconds": 1059.16, "list_with_cache_usd": "0.099502810", "job": 139718356915},
+    {"task_number": 13, "repository": "Ansible", "harness": "pi", "resolved": 0, "model_calls": 40, "input_tokens": 1578279, "output_tokens": 55252, "reasoning_tokens": 41434, "agent_seconds": 816.18, "list_with_cache_usd": "0.078726890", "job": 139718356771}
+  ]
+}
