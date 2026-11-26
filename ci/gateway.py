@@ -4,6 +4,7 @@ from __future__ import annotations
 import http.server
 import json
 import os
+import re
 import socketserver
 import threading
 import time
@@ -24,7 +25,12 @@ def gmi_request(path, payload=None):
     key = os.environ.get("GMI_API_KEY", "").strip()
     if not key:
         raise ValueError("GMI_API_KEY is missing")
-    headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
+    headers = {
+        "Authorization": "Bearer " + key,
+        "Accept": "text/event-stream" if payload and payload.get("stream") else "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "HarnessTwin-Hard/1.0 (+https://github.com/himanshu748/harnesstwin-hard)",
+    }
     if organization := os.environ.get("GMI_ORGANIZATION_ID"):
         headers["X-Organization-ID"] = organization
     data = None if payload is None else json.dumps(payload).encode()
@@ -57,12 +63,18 @@ def inventory_failure(exc):
     category = next((name for name, terms in reasons.items() if any(term in raw for term in terms)), "unclassified")
     if exc.headers.get("cf-mitigated", "").lower() == "challenge":
         category = "edge_challenge"
-    return {
+    error_code = re.search(r"\berror code\s*[: ]\s*(1[0-9]{3})\b", raw)
+    result = {
         "http_status": exc.code,
-        "response_format": {"application/json": "json", "text/html": "html"}.get(content_type, "other"),
+        "response_format": {
+            "application/json": "json", "text/html": "html", "text/plain": "text",
+        }.get(content_type, "other"),
         "cloudflare_ray_present": bool(exc.headers.get("cf-ray")),
         "category": category,
     }
+    if error_code and result["cloudflare_ray_present"]:
+        result["cloudflare_error_code"] = int(error_code.group(1))
+    return result
 
 
 class Budget:
