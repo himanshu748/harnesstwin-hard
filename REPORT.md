@@ -82,9 +82,11 @@ Repricing the six scored Flash attempts at the GLM-5.3 list rates of $1.40 input
 
 The original 8,192-token GLM-5.3 job was canceled during the first task when the requested completion cap changed. Pi and OpenCode both received reward `0` in that job. mini-SWE-agent was interrupted. The two completed attempts settled at $0.276321 at the account's list rates with reported cache reads. The partial mini-SWE-agent ledger recorded 17 calls before cancellation. The GMI console showed $0.24 for the superseded job with a 50% discount and approximately 946.4K input tokens, 869.9K cache reads and 33.3K output tokens. Its provider totals include traffic that completed during cancellation after the last local ledger write.
 
-The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls.
+The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls. Both the model tier and the completion cap change from the Flash pilot to the main trial. A difference across those runs combines both changes.
 
-[Active 32K workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Replacement configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
+At 09:55 IST, the live main workflow logged `pi: verified_resolved` for qutebrowser on trial 1. This status requires official reward `1`, an official `RESULT: PASSED` line and matching agent and verifier base commits. The job continued to OpenCode. The main artifact and paired results will be available when the job finishes.
+
+[Active 32K workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Live verifier log](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996/job/139684475962#logs) · [Replacement configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
 
 ## Upstream contribution
 
