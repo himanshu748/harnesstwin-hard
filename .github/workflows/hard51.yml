@@ -7,7 +7,23 @@ on:
         required: true
         default: controls
         type: choice
-        options: [inventory, controls, smoke, triad, second, pilot, resume-pilot, controls-second]
+        options: [inventory, controls, smoke, triad, second, pilot, resume-pilot, controls-second, hard]
+      first_task:
+        description: First task in hard mode
+        type: number
+        default: 1
+      task_count:
+        description: Number of matched tasks in hard mode
+        type: number
+        default: 10
+      trial:
+        description: Hard-mode repeat number
+        type: number
+        default: 1
+      phase_budget:
+        description: Remaining hard-phase USD ceiling
+        type: string
+        default: '47.50'
 permissions:
   contents: read
 concurrency:
@@ -16,7 +32,7 @@ concurrency:
 jobs:
   benchmark:
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    timeout-minutes: 345
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -32,7 +48,16 @@ jobs:
           GMI_API_KEY: ${{ secrets.GMI_API_KEY }}
           GMI_ORGANIZATION_ID: ${{ vars.GMI_ORGANIZATION_ID }}
           MODE: ${{ inputs.mode }}
-        run: python3 ci/run.py "$MODE" --dataset official --out run-evidence
+          FIRST_TASK: ${{ inputs.first_task }}
+          TASK_COUNT: ${{ inputs.task_count }}
+          TRIAL: ${{ inputs.trial }}
+          PHASE_BUDGET: ${{ inputs.phase_budget }}
+        run: |
+          args=("$MODE" --dataset official --out run-evidence)
+          if [ "$MODE" = hard ]; then
+            args+=(--first-task "$FIRST_TASK" --task-count "$TASK_COUNT" --trial "$TRIAL" --phase-budget "$PHASE_BUDGET")
+          fi
+          python3 ci/run.py "${args[@]}"
       - name: Normalize evidence permissions
         if: always()
         run: |
@@ -41,7 +66,7 @@ jobs:
             sudo find run-evidence -type f -exec chmod a+r {} +
             sudo find run-evidence -type d -exec chmod a+rx {} +
           fi
-          for result in run-evidence/controls.json run-evidence/smoke.json run-evidence/inventory.json run-evidence/results.json; do
+          for result in run-evidence/controls.json run-evidence/smoke.json run-evidence/inventory.json run-evidence/pricing.json run-evidence/budget.json run-evidence/results.json; do
             if [ -f "$result" ]; then
               echo "### $result" >> "$GITHUB_STEP_SUMMARY"
               echo '```json' >> "$GITHUB_STEP_SUMMARY"
@@ -57,6 +82,8 @@ jobs:
           path: |
             run-evidence/**/results.*
             run-evidence/**/inventory.json
+            run-evidence/**/pricing.json
+            run-evidence/**/budget.json
             run-evidence/**/controls.json
             run-evidence/**/smoke.json
             run-evidence/**/plan.json

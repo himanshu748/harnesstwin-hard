@@ -16,7 +16,7 @@ import time
 import tomllib
 import urllib.error
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from gateway import Budget, Relay, inventory, inventory_failure
@@ -32,6 +32,7 @@ RESULT_COLUMNS = (
     "agent_seconds", "verifier_seconds", "base_commit", "image", "patch_sha256", "model_calls",
     "model_errors", "budget_denials", "tool_calls_observed", "input_tokens", "output_tokens",
     "reasoning_tokens", "estimated_inference_usd", "actual_inference_usd", "actual_compute_usd",
+    "budget_upper_usd",
 )
 
 
@@ -210,7 +211,8 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
     exit_value = exit_file.read_text().strip() if regular_file(exit_file, 12) else ""
     agent_exit = int(exit_value) if exit_value.isdigit() else code
     row = dict(agent_exit=agent_exit, agent_seconds=duration, model_calls=budget.calls,
-               model_errors=budget.errors, budget_denials=budget.denied, **totals(usage_file))
+               model_errors=budget.errors, budget_denials=budget.denied,
+               budget_upper_usd=str(budget.charged), **totals(usage_file))
     if code or not regular_file(patch) or not regular_file(agent_base_path, 100) or not budget.calls or budget.errors == budget.calls:
         return row | dict(status="agent_or_inference_error", resolved=None)
     outcome = verify(official_image, patch, tests, run_dir, env)
@@ -235,15 +237,26 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=[
         "inventory", "controls", "controls-second", "smoke", "triad", "second",
-        "pilot", "resume-pilot", "plan",
+        "pilot", "resume-pilot", "plan", "hard",
     ])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("run-evidence"))
+    parser.add_argument("--first-task", type=int, default=1)
+    parser.add_argument("--task-count", type=int, default=10)
+    parser.add_argument("--trial", type=int, default=1)
+    parser.add_argument("--phase-budget", type=Decimal, default=Decimal("47.50"))
     ns = parser.parse_args()
+    hard = ns.mode == "hard"
+    if hard:
+        SETTINGS.update(json.loads((CI / "hard-settings.json").read_text()))
+        if not (1 <= ns.first_task <= ns.first_task + ns.task_count - 1 <= len(TASKS) and 1 <= ns.trial <= 3):
+            parser.error("Specify a valid HARD task range and trial number from 1 to 3")
+        if not ns.phase_budget.is_finite() or not 0 < ns.phase_budget <= Decimal(str(SETTINGS["hard_phase_ceiling_usd"])):
+            parser.error("Hard-phase budget must be positive and at most $47.50")
     out = ns.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     save_results(out, [])
-    if ns.mode in {"inventory", "triad", "second", "pilot", "resume-pilot"}:
+    if ns.mode in {"inventory", "triad", "second", "pilot", "resume-pilot", "hard"}:
         try:
             models = inventory()
         except urllib.error.HTTPError as exc:
@@ -263,14 +276,28 @@ def main():
             raise SystemExit("Pinned model ID is unavailable in the authenticated inventory")
         if (ctx := model.get("context_length")) and (not isinstance(ctx, int) or ctx > SETTINGS["context_ceiling"]):
             raise SystemExit("The authenticated model context exceeds the configured cost ceiling")
+        if hard:
+            try:
+                pricing = model["pricing"]
+                rates = {name: Decimal(str(pricing[name])) * 1_000_000 for name in ("prompt", "completion")}
+                approved_rates = (SETTINGS["input_usd_per_million_upper_rate"], SETTINGS["output_usd_per_million_upper_rate"])
+                within_cap = all(rate.is_finite() and 0 < rate <= Decimal(str(cap))
+                                 for rate, cap in zip(rates.values(), approved_rates))
+            except (KeyError, TypeError, InvalidOperation):
+                within_cap = False
+            if not within_cap:
+                raise SystemExit("The authenticated main-model pricing is missing or exceeds the approved rates")
+            write_json(out / "pricing.json", {"serving_id": SETTINGS["model"],
+                       "listed_usd_per_million": {name: str(value) for name, value in rates.items()}})
     first_two = TASKS[:2]
     control_run = ns.mode in {"controls", "controls-second"}
     selected = {
         "plan": TASKS, "pilot": first_two, "resume-pilot": first_two,
         "second": TASKS[1:2], "controls-second": TASKS[1:2],
+        "hard": TASKS[ns.first_task - 1:ns.first_task - 1 + ns.task_count],
     }.get(ns.mode, TASKS[:1])
     attempts = [
-        (task, HARNESSES[(TASKS.index(task) + shift) % len(HARNESSES)])
+        (task, HARNESSES[(TASKS.index(task) + shift + ns.trial - 1) % len(HARNESSES)])
         for task in selected for shift in range(len(HARNESSES))
     ]
     if ns.mode == "resume-pilot":
@@ -287,10 +314,22 @@ def main():
     write_json(out / "plan.json", {"settings": SETTINGS, "mode": ns.mode, "attempts": attempts})
     if ns.mode == "plan":
         return
-    if not control_run and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
+    if not control_run and not hard and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
         raise SystemExit("Planned spend reaches mission ceiling")
     results, probes = [], {}
+    hard_spend = Decimal(0)
+    hard_stop = ""
+    hard_deadline = time.monotonic() + 330 * 60
+    block_seconds = 900 + 1500 + len(HARNESSES) * (
+        SETTINGS["agent_seconds"] + SETTINGS["verifier_seconds"] + 120
+    )
     for ix, task in enumerate(selected):
+        if hard and hard_spend + Decimal(str(SETTINGS["attempt_cap_usd"])) * len(HARNESSES) > ns.phase_budget:
+            hard_stop = "budget_before_next_matched_block"
+            break
+        if hard and time.monotonic() + block_seconds > hard_deadline:
+            hard_stop = "runner_deadline_before_next_matched_block"
+            break
         task_dir = out / f"task-{ix + 1:02}"
         task_dir.mkdir()
         env, read, config, tests, official_image = prepare_task(ns.dataset, task, task_dir)
@@ -325,8 +364,14 @@ def main():
                 probes[harness] = row
                 write_json(out / "smoke.json", probes)
                 continue
-            results.append(dict(task_id=task, harness=harness, trial=1, model=SETTINGS["model"],
+            results.append(dict(task_id=task, harness=harness, trial=ns.trial, model=SETTINGS["model"],
                                 image=official_image, **row))
+            if hard:
+                hard_spend += Decimal(row["budget_upper_usd"])
+                write_json(out / "budget.json", {
+                    "conservative_spend_so_far_usd": str(hard_spend),
+                    "phase_budget_usd": str(ns.phase_budget),
+                })
             save_results(out, results)
             print(f"{harness}: {row['status']}", flush=True)
             if ns.mode == "resume-pilot" and task == first_two[0] and row["resolved"] is None:
@@ -334,6 +379,13 @@ def main():
         shutil.rmtree(tests)
     if ns.mode == "smoke" and not all(row["endpoint_reached"] for row in probes.values()):
         raise SystemExit("One or more harnesses could not reach the offline relay")
+    if hard:
+        write_json(out / "budget.json", {
+            "conservative_spend_so_far_usd": str(hard_spend),
+            "phase_budget_usd": str(ns.phase_budget),
+            "stopped_for": hard_stop or None,
+            "attempts_completed": len(results),
+        })
 
 
 if __name__ == "__main__":

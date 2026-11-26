@@ -20,6 +20,16 @@ python3 ci/run.py controls --dataset official --out controls
 
 For live runs, inject the key from your secret manager into the host process and select a live mode. The host relay sends the authenticated requests. The agent container has no network interfaces except loopback and receives a placeholder API key. The local bridge exposes only the fixed GMI Chat Completions route. Each candidate patch is replayed in a fresh official task image with an unchanged verifier. Only official parsed verdicts count as measured outcomes. Invalid patches and missing verifier evidence are retained as separate outcomes.
 
+## Main benchmark
+
+The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID. It checks the model's live list rates before sending inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
+
+Use `controls-second` to replay the clean and reference patches for the second pilot task. Use `resume-pilot` only after the original first task and only for the recorded Mini-SWE-agent failure followed by the second task. To reproduce the combined pilot table after downloading both workflow artifacts:
+
+```sh
+python3 ci/collect_pilot.py FIRST_RUN=first.zip RESUME_RUN=resume.zip --out pilot-results
+```
+
 ## Design
 
 - The dataset commit and HARD-51 SHA-256 are in `ci/settings.json`. The task IDs were fixed before inference. The pilot samples Qt key handling and Open Library search indexing. The ten-task extension is a convenience sample of these two repositories and cannot estimate the full HARD-51 distribution.

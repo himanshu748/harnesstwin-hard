@@ -1,0 +1,8 @@
+{
+  "model": "zai-org/GLM-5.3",
+  "input_usd_per_million_upper_rate": 1.40,
+  "output_usd_per_million_upper_rate": 4.40,
+  "attempt_cap_usd": 2.50,
+  "mission_cap_usd": 50.00,
+  "hard_phase_ceiling_usd": 47.50
+}
