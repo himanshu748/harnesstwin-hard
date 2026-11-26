@@ -20,6 +20,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from gateway import Budget, Relay, inventory, inventory_failure
+from trace_summary import opencode_exited_at_call_limit
 
 CI = Path(__file__).resolve().parent
 SETTINGS = json.loads((CI / "settings.json").read_text())
@@ -224,8 +225,15 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
     if agent_base != outcome["base_commit"]:
         outcome.update(status="base_commit_mismatch", resolved=None)
     elif agent_exit not in (0, 124):
-        outcome.update(verifier_status=outcome["status"], verifier_resolved=outcome["resolved"],
-                       status="agent_error", resolved=None)
+        at_call_limit = False
+        if harness == "opencode" and budget.calls == budget.max_calls and budget.denied and not budget.errors:
+            with (run_dir / "agent.log").open("rb") as trace:
+                at_call_limit = opencode_exited_at_call_limit(trace)
+        if at_call_limit:
+            outcome["agent_termination"] = "benchmark_call_limit"
+        else:
+            outcome.update(verifier_status=outcome["status"], verifier_resolved=outcome["resolved"],
+                           status="agent_error", resolved=None)
     return row | outcome | {"patch_sha256": hashlib.sha256(patch.read_bytes()).hexdigest()}
 
 

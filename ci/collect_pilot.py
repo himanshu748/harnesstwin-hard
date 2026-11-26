@@ -13,6 +13,7 @@ from zipfile import ZipFile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from compare import analyze
+from trace_summary import opencode_exited_at_call_limit
 
 HARNESS_ORDER = ("pi", "opencode", "mini-swe-agent")
 
@@ -32,6 +33,14 @@ def artifact_rows(path, run_id):
                     cached = (usage.get("prompt_tokens_details") or {}).get("cached_tokens")
                     if type(cached) is int:
                         row["cache_read_tokens_reported"] += cached
+            if (row["harness"] == "opencode" and row["status"] == "agent_error"
+                    and row.get("verifier_resolved") in (0, 1)
+                    and row.get("model_calls") == plan["settings"]["max_calls"]
+                    and row.get("budget_denials", 0) > 0 and row.get("model_errors") == 0):
+                with archive.open(f"{path_prefix}/agent.log") as stream:
+                    if opencode_exited_at_call_limit(stream):
+                        row.update(status=row["verifier_status"], resolved=row["verifier_resolved"],
+                                   agent_termination="benchmark_call_limit")
             if row.get("resolved") in (0, 1):
                 reward = int(archive.read(f"{path_prefix}/verifier/reward.txt"))
                 if reward != row["resolved"]:
@@ -40,7 +49,7 @@ def artifact_rows(path, run_id):
                 if hashlib.sha256(patch).hexdigest() != row["patch_sha256"]:
                     raise ValueError(f"Candidate patch digest mismatch for {path_prefix}")
                 row["patch_bytes"] = len(patch)
-                if row["agent_exit"] not in (0, 124):
+                if row["agent_exit"] not in (0, 124) and row.get("agent_termination") != "benchmark_call_limit":
                     row.update(verifier_status=row["status"], verifier_resolved=reward,
                                status="agent_error", resolved=None)
             yield row

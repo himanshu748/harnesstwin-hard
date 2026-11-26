@@ -17,6 +17,21 @@ def object_lines(stream):
             yield event
 
 
+def opencode_exited_at_call_limit(stream):
+    error = None
+    for event in object_lines(stream):
+        if event.get("type") == "error":
+            error = event.get("error")
+    data = error.get("data", {}) if isinstance(error, dict) else {}
+    if not isinstance(data, dict) or data.get("statusCode") != 429:
+        return False
+    try:
+        payload = json.loads(data.get("responseBody", ""))["error"]
+    except (KeyError, TypeError, ValueError):
+        return False
+    return payload == {"message": "Benchmark request or spending cap reached", "type": "harnesstwin_relay"}
+
+
 def agent_trace(archive, prefix, harness):
     if harness == "mini-swe-agent":
         with archive.open(prefix + "/agent/trajectory.json") as stream:

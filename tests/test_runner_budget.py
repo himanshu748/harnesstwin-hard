@@ -13,9 +13,21 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 from gateway import Budget, inventory_failure
 from run import CI, SETTINGS, prepare_model_config, regular_file
+from trace_summary import opencode_exited_at_call_limit
 
 
 class RelayBudgetTests(unittest.TestCase):
+    def test_only_local_open_code_limit_exit_counts_as_intentional(self):
+        data = {"statusCode": 429, "responseBody": json.dumps({"error": {
+            "message": "Benchmark request or spending cap reached", "type": "harnesstwin_relay",
+        }})}
+        local = {"type": "error", "error": {"data": data}}
+        provider = {"type": "error", "error": {"data": {"statusCode": 429, "responseBody": "rate limited"}}}
+        log = lambda *events: BytesIO(b"\n".join(json.dumps(x).encode() for x in events))
+        self.assertTrue(opencode_exited_at_call_limit(log(local)))
+        self.assertFalse(opencode_exited_at_call_limit(log(provider)))
+        self.assertFalse(opencode_exited_at_call_limit(log(local, provider)))
+
     def test_hard_profile_sets_32k_completion_limit_for_clients_and_budget(self):
         profile = json.loads((CI / "hard-settings.json").read_text())
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmp, patch.dict(SETTINGS, profile):
