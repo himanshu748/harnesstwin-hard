@@ -38,7 +38,7 @@ Both Pi and both OpenCode traces ended on the provider completion limit. On qute
 
 ![qutebrowser control chart comparing required tests passed by the empty and reference patches](evidence/controls.svg)
 
-All 23 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
+All 24 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
 
 [qutebrowser control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45702666035) · [Open Library control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45749163661)
 
@@ -81,9 +81,9 @@ Repricing the six scored Flash attempts at the GLM-5.3 list rates of $1.40 input
 
 The original 8,192-token GLM-5.3 job was canceled during the first task when the requested completion cap changed. Pi and OpenCode both received reward `0` in that job. mini-SWE-agent was interrupted. The two completed attempts settled at $0.276321 at the account's list rates with reported cache reads. The partial mini-SWE-agent ledger recorded 17 calls before cancellation. Actual provider totals for the superseded job include any in-flight request and are tracked separately.
 
-The replacement profile uses `zai-org/GLM-5.3` with a 32,768-token completion limit per call for all three harnesses. Its trial starts again at task 1 and uses a $47.00 ceiling, allowing for the Flash pilot and the superseded main job within the $50 mission cap.
+The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls.
 
-[Superseded run and evidence](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45751144973) · [Replacement configuration](ci/hard-settings.json)
+[Active 32K workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Replacement configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
 
 ## Upstream contribution
 

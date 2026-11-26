@@ -1,0 +1,28 @@
+{
+  "model": "zai-org/GLM-5.3",
+  "superseded_8k": {
+    "run": 45751144973,
+    "archive_sha256": "ce58013688e6138d62a468efa54cec3e47d5c1c54e053b598af7e9109c1e799f",
+    "completion_cap": 8192,
+    "completed_attempts": 2,
+    "completed_rewards": {"pi": 0, "opencode": 0},
+    "settled_conservative_list_usd_completed_attempts": "0.276320520",
+    "interrupted_mini_swe_agent_calls_written": 17,
+    "interrupted_mini_swe_agent_latest_usage_ledger_charge_usd": "0.176259200"
+  },
+  "superseded_32k_build_only": {
+    "run": 45752533723,
+    "archive_sha256": "4a6a94041df437dfd7f0c79e6e151afd81f590361a16081ed2793ea309b35ed5",
+    "completion_cap": 32768,
+    "model_calls": 0
+  },
+  "matched_32k_job": {
+    "run": 45752847996,
+    "first_task": 1,
+    "task_count": 10,
+    "trial": 1,
+    "phase_budget_usd": "47.00",
+    "completion_cap": 32768,
+    "upstream_socket_timeout_seconds": 600
+  }
+}
