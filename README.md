@@ -24,6 +24,14 @@ For live runs, inject the key from your secret manager into the host process and
 
 The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID and sets a 32,768-token completion limit per model call for all three harnesses. Its relay allows up to 600 seconds of upstream socket inactivity, bounded by the time left when a call starts, so clients that request a full response can use the larger completion budget. The job checks the model's live list rates before inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
 
+After the main jobs upload artifacts, collect the ZIPs from that model and plot trial 1. Add more `RUN_ID=PATH` arguments when the same configuration was used across more jobs.
+
+```sh
+python3 ci/collect_pilot.py HARD_RUN=hard.zip --out hard-results
+python3 ci/trace_summary.py HARD_RUN=hard.zip --out hard-results/tool_traces.json
+python3 ci/plot_comparison.py hard-results/attempts.json hard-results/comparison.svg
+```
+
 Use `controls-second` to replay the clean and reference patches for the second pilot task. Use `resume-pilot` only after the original first task and only for the recorded Mini-SWE-agent failure followed by the second task. To reproduce the combined pilot table after downloading both workflow artifacts:
 
 ```sh
