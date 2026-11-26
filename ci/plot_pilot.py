@@ -23,9 +23,12 @@ def main():
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     rows = json.loads(args.results.read_text())
-    tasks = list(dict.fromkeys(row["task_id"] for row in rows))
-    if not 1 <= len(tasks) <= 2:
+    observed = {row["task_id"] for row in rows}
+    pilot_ids = json.loads(Path(__file__).with_name("tasks.json").read_text())[:2]
+    task_labels = dict(zip(pilot_ids, ("qutebrowser", "Open Library")))
+    if not observed or not observed <= task_labels.keys():
         parser.error("Provide verified pilot results for one or two tasks")
+    tasks = [task for task in pilot_ids if task in observed]
 
     plt.rcParams.update({"svg.fonttype": "none", "font.size": 10})
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.7), layout="constrained")
@@ -51,9 +54,9 @@ def main():
         axis.spines[["top", "right"]].set_visible(False)
         axis.grid(axis="y", alpha=0.2)
         axis.set_axisbelow(True)
-    caption = "Solid bars: qutebrowser."
+    caption = f"Solid bars: {task_labels[tasks[0]]}."
     if len(tasks) == 2:
-        caption += " Hatched bars: Open Library."
+        caption += f" Hatched bars: {task_labels[tasks[1]]}."
     fig.suptitle(f"GLM-5.3 Flash pilot · {caption}", x=0.03, ha="left", fontsize=12)
     fig.savefig(args.output, metadata={"Date": None})
 

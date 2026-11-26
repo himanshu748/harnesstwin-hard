@@ -22,7 +22,7 @@ For live runs, inject the key from your secret manager into the host process and
 
 ## Main benchmark
 
-The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID. It checks the model's live list rates before sending inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
+The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID and sets a 32,768-token completion limit per model call for all three harnesses. It checks the model's live list rates before inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
 
 Use `controls-second` to replay the clean and reference patches for the second pilot task. Use `resume-pilot` only after the original first task and only for the recorded Mini-SWE-agent failure followed by the second task. To reproduce the combined pilot table after downloading both workflow artifacts:
 

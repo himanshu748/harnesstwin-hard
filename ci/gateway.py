@@ -108,7 +108,7 @@ class Budget:
             self.charged += self.reserve
             return self.calls
 
-    def finish(self, call, usage, status, tool_names, duration, provider_model=None):
+    def finish(self, call, usage, status, tool_names, duration, provider_model=None, finish_reasons=()):
         prompt = (usage or {}).get("prompt_tokens")
         completion = (usage or {}).get("completion_tokens")
         valid = all(type(n) is int and n >= 0 for n in (prompt, completion))
@@ -126,6 +126,8 @@ class Budget:
             with self.log.open("a", encoding="utf-8") as f:
                 f.write(json.dumps({
                     "call": call, "status": status, "usage": usage, "returned_model": provider_model,
+                    "requested_max_completion_tokens": self.max_output,
+                    "finish_reasons": sorted(finish_reasons),
                     "tool_names": sorted(tool_names), "seconds": round(duration, 3),
                     "estimated_usd_uncached": str(self.price(prompt, completion)) if valid else None,
                     "estimated_usd_list_with_reported_cache": str(settled) if valid else None,
@@ -179,6 +181,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
         start = time.monotonic()
         status, usage, tool_names, provider_model = 502, None, set(), None
+        finish_reasons = set()
         body.pop("max_completion_tokens", None)
         body.pop("reasoning_effort", None)
         body.pop("thinking", None)
@@ -204,6 +207,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     usage = event.get("usage") or usage
                     provider_model = event.get("model") or provider_model
                     for choice in event.get("choices") or []:
+                        if isinstance(reason := choice.get("finish_reason"), str) and reason:
+                            finish_reasons.add(reason)
                         message = choice.get("delta") or choice.get("message") or {}
                         for index, tool in enumerate(message.get("tool_calls") or []):
                             if name := (tool.get("function") or {}).get("name"):
@@ -217,4 +222,4 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if status != 200:
                 self.error(502, "GMI connection failed")
         finally:
-            budget.finish(call, usage, status, tool_names, time.monotonic() - start, provider_model)
+            budget.finish(call, usage, status, tool_names, time.monotonic() - start, provider_model, finish_reasons)

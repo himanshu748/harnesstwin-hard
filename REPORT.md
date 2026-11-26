@@ -38,7 +38,7 @@ Both Pi and both OpenCode traces ended on the provider completion limit. On qute
 
 ![qutebrowser control chart comparing required tests passed by the empty and reference patches](evidence/controls.svg)
 
-All 22 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
+All 23 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
 
 [qutebrowser control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45702666035) · [Open Library control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45749163661)
 
@@ -73,15 +73,17 @@ The pilot uses 19 minutes per agent, shorter than the official 50-minute locked 
 
 The runner reserves up to $0.90 per Flash attempt. Across 102 model calls including the integration failure, the relay recorded 3,599,924 input tokens, 3,351,552 cache reads and 104,445 output tokens. Using Flash list rates of $0.15 input, $0.03 cache read and $0.50 output per million tokens, the estimated cost is $0.592211 uncached or $0.095012 with reported cache reads and the displayed 50% discount. Reasoning tokens are part of output tokens. The unauthenticated and Cloudflare-challenged inventory attempts used zero model inference. After authorized credential setup and successful inventory, all live attempts used the exact returned GLM-5.3 Flash ID.
 
-Repricing the six scored Flash attempts at the GLM-5.3 list rates of $1.40 input, $0.26 cache read and $4.40 output gives an estimate of $8.37 for 30 runs and $25.12 for 90 if each task group uses the same tokens and cache mix. At up to twice that footprint, the planning ranges round to $8–$17 and $25–$50. With the same token count and no cache savings, the projections are $27.48 and $82.43. These are inference forecasts based on Flash traces. The main runner checks account rates and stops before it can start a matched block the remaining budget cannot cover.
+Repricing the six scored Flash attempts at the GLM-5.3 list rates of $1.40 input, $0.26 cache read and $4.40 output gives an estimate of $8.37 for 30 runs and $25.12 for 90 if each task group uses the same tokens and cache mix. With the 32,768-token cap, a scenario with twice the input and four times the output gives $21.34 and $64.02 at the same cache share. With the original token count and zero cache savings, the projections are $27.48 and $82.43. These are scenarios based on Flash traces. The main runner checks account rates and stops before it can start a matched block the remaining budget cannot cover.
 
 [Pilot cost observation](evidence/pilot/costs.json) · [First-job cost observation](evidence/first-task-billing-observation.json) · [GitHub standard runner pricing](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job) · [GMI list prices](https://www.gmicloud.ai/en/blog/chinese-language-agents-glm-5-3-managed-environment)
 
 ## Main GLM-5.3 run
 
-Trial 1 was dispatched for ten tasks and 30 attempts with `zai-org/GLM-5.3`. The hard-phase budget was set to $47.50, within the $50 mission cap. The main job has its own model stratum and separate evidence. Pilot scores apply to GLM-5.3 Flash alone.
+The original 8,192-token GLM-5.3 job was canceled during the first task when the requested completion cap changed. Pi and OpenCode both received reward `0` in that job. mini-SWE-agent was interrupted. The two completed attempts settled at $0.276321 at the account's list rates with reported cache reads. The partial mini-SWE-agent ledger recorded 17 calls before cancellation. Actual provider totals for the superseded job include any in-flight request and are tracked separately.
 
-[Main workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45751144973)
+The replacement profile uses `zai-org/GLM-5.3` with a 32,768-token completion limit per call for all three harnesses. Its trial starts again at task 1 and uses a $47.00 ceiling, allowing for the Flash pilot and the superseded main job within the $50 mission cap.
+
+[Superseded run and evidence](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45751144973) · [Replacement configuration](ci/hard-settings.json)
 
 ## Upstream contribution
 

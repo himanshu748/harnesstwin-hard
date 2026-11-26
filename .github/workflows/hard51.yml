@@ -23,7 +23,7 @@ on:
       phase_budget:
         description: Remaining hard-phase USD ceiling
         type: string
-        default: '47.50'
+        default: '47.00'
 permissions:
   contents: read
 concurrency:

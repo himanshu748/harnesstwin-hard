@@ -1,4 +1,5 @@
 """Regression tests for the relay's local accounting and output validation."""
+import json
 import sys
 import tempfile
 import unittest
@@ -7,13 +8,28 @@ from email.message import Message
 from io import BytesIO
 from pathlib import Path
 from urllib.error import HTTPError
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 from gateway import Budget, inventory_failure
-from run import regular_file
+from run import CI, SETTINGS, prepare_model_config, regular_file
 
 
 class RelayBudgetTests(unittest.TestCase):
+    def test_hard_profile_sets_32k_completion_limit_for_clients_and_budget(self):
+        profile = json.loads((CI / "hard-settings.json").read_text())
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmp, patch.dict(SETTINGS, profile):
+            path = Path(tmp)
+            prepare_model_config(path)
+            pi = json.loads((path / "models.json").read_text())["providers"]["ht"]["models"][0]
+            opencode = json.loads((path / "opencode.json").read_text())["provider"]["ht"]["models"][profile["model"]]
+            self.assertEqual(pi["maxTokens"], 32768)
+            self.assertEqual(opencode["limit"]["output"], 32768)
+            budget = Budget(profile["model"], SETTINGS["context_ceiling"], SETTINGS["max_completion_tokens_per_call"],
+                            profile["input_usd_per_million_upper_rate"], profile["output_usd_per_million_upper_rate"],
+                            profile["attempt_cap_usd"], SETTINGS["max_calls"], None, path / "usage.jsonl")
+            self.assertEqual(budget.reserve, Decimal("1.6121856"))
+
     def test_inventory_refusal_never_contains_provider_body(self):
         headers = Message()
         headers["Content-Type"] = "application/json"
