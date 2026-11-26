@@ -283,7 +283,7 @@ def main():
             raise SystemExit(str(exc)) from None
         write_json(out / "inventory.json", {
             "model_count": len(models),
-            "matching_ids": sorted(i for i in models if re.search(r"(glm[- ]?5\.3|deepseek[-_/ ]?v4\.1|kimi[-_ ]?k3)", i, re.I)),
+            "matching_ids": sorted(i for i in models if re.search(r"(glm[- ]?5\.[34]|deepseek[-_/ ]?v4\.1|kimi[-_ ]?k3)", i, re.I)),
         })
         if ns.mode == "inventory":
             return
