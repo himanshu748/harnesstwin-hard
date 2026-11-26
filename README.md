@@ -1,6 +1,6 @@
 # HarnessTwin Hard
 
-A paired comparison of Pi, OpenCode and mini-SWE-agent on the official SWE-bench Pro V2 HARD-51 split. Each harness gets the same task, GMI Cloud model, model-call limits and execution resources. This repository contains the runner and audit trail. The initial publication has no measured harness scores.
+A paired comparison of Pi, OpenCode and mini-SWE-agent on the official SWE-bench Pro V2 HARD-51 split. Each harness gets the same task, GMI Cloud model, model-call limits and execution resources. See the technical report for measured outcomes and run evidence.
 
 ## Run
 
@@ -28,15 +28,16 @@ Use `controls-second` to replay the clean and reference patches for the second p
 
 ```sh
 python3 ci/collect_pilot.py FIRST_RUN=first.zip RESUME_RUN=resume.zip --out pilot-results
+python3 ci/plot_pilot.py pilot-results/results.json pilot-results/measurements.svg
 ```
 
 ## Design
 
 - The dataset commit and HARD-51 SHA-256 are in `ci/settings.json`. The task IDs were fixed before inference. The pilot samples Qt key handling and Open Library search indexing. The ten-task extension is a convenience sample of these two repositories and cannot estimate the full HARD-51 distribution.
 - Official base OCI image digests and Git HEADs are recorded for each run. Node dependencies use `ci/package-lock.json`. The Python dependency list and toolbox base image digests are pinned. The first official task image was pinned to the digest observed in the verifier controls. The official image digests for the rest of the selected tasks will be recorded as they run.
-- The pilot uses a 19-minute agent budget. The official locked protocol uses 50 minutes, so scores from this pilot would describe a short-budget harness comparison.
+- The pilot uses a 19-minute agent budget. The official locked protocol uses 50 minutes, so pilot scores describe a short-budget harness comparison.
 - The relay uses the same output cap and default provider reasoning setting across clients. Differences in history serialization, system prompts and tool schemas are part of the treatment. The pilot's 40-call ceiling and $0.90 conservative inference reserve are per attempt. The six-attempt model reserve is $5.40 at the recorded upper rates. Reconcile GMI billing before launching more jobs.
-- JSON and CSV preserve nulls for missing measurements. Estimated costs use uncached list pricing. The model-call ledger records provider-reported usage when returned. Agent logs and the mini-SWE-agent trajectory support tool failure inspection.
+- JSON and CSV preserve nulls for missing measurements. Estimated costs use uncached list pricing. The model-call ledger records provider-reported usage when returned. Agent logs and the mini-SWE-agent trajectory support tool failure inspection. Plotting requires Matplotlib 3.10.8.
 - Use `python compare.py verified.csv` only after assembling a balanced matrix containing explicit verifier 0/1 outcomes. Inspect missing or infrastructure-failed trials before interpreting any difference.
 
 `bench.py` and `hard_mode.py` are the original local fixture and Harbor planning tools. Their dry-run output carries no HARD-51 outcome. The Docker workflow above is the maintained live runner.

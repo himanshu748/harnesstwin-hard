@@ -1,0 +1,26 @@
+{
+  "currency": "USD",
+  "provider_console_date": "2026-11-26",
+  "model": "zai-org/GLM-5.3-Flash",
+  "includes_excluded_integration_attempt": true,
+  "model_calls": 102,
+  "metered_input_tokens": 3599924,
+  "metered_cache_read_tokens": 3351552,
+  "metered_output_tokens": 104445,
+  "metered_reasoning_tokens": 94269,
+  "runner_compute_usd": "0.00",
+  "actual_provider_console_amount_usd_displayed": "0.09",
+  "provider_console_discount_displayed": "50% off",
+  "uncached_list_estimate_usd": "0.59221110",
+  "cache_and_promotion_estimate_usd": "0.09501243",
+  "rate_unit": "USD per million tokens",
+  "flash_list_rates": {"input": "0.15", "cache_read": "0.03", "output": "0.50"},
+  "main_projection_model": "zai-org/GLM-5.3",
+  "main_list_rates": {"input": "1.40", "cache_read": "0.26", "output": "4.40"},
+  "main_projection_using_six_scored_attempts": {
+    "same_footprint_and_cache_30_runs_usd": "8.37368160",
+    "same_footprint_and_cache_90_runs_usd": "25.12104480",
+    "same_footprint_without_cache_30_runs_usd": "27.4775280",
+    "same_footprint_without_cache_90_runs_usd": "82.4325840"
+  }
+}

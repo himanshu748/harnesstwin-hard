@@ -1,0 +1,46 @@
+{
+  "retained_workflow_archives": [
+    {
+      "file": "official-controls.zip",
+      "run": 45702666035,
+      "purpose": "qutebrowser positive and negative verifier controls",
+      "sha256": "b933e25c403090e172ce88120830707fd4901c887d9792e54207fa00bda3ad40"
+    },
+    {
+      "file": "isolated-smoke.zip",
+      "run": 45704871473,
+      "purpose": "offline relay integration test, no GMI inference",
+      "sha256": "8f33315c741a96ec10df021b14535358cfaf53178b6a550787f418111258f916"
+    },
+    {
+      "file": "authenticated-inventory.zip",
+      "run": 45747559909,
+      "purpose": "authenticated serving IDs",
+      "sha256": "0292531e671f5d092e0f1c72dfe45767226359fcd69e9c3a3b46d2d809d57590"
+    },
+    {
+      "file": "live-task-1.zip",
+      "run": 45747712965,
+      "sha256": "7e39e35562812a365b530ec6b3a5ab05fa5d1dfd38e53e2cf015c330fecea85f",
+      "purpose": "qutebrowser initial attempts"
+    },
+    {
+      "file": "live-resume.zip",
+      "run": 45748668508,
+      "sha256": "6955921ac9f223ebc1dff700395066883527773e4bc0a498e3ba5e2d25a14bcf",
+      "purpose": "qutebrowser mini-SWE-agent retry and Open Library attempts"
+    },
+    {
+      "file": "official-controls-second.zip",
+      "run": 45749163661,
+      "sha256": "f85a46a04b3c998e2d8472e95656b27de11580b0b3d0dc7c52c05d0b0a7a8eaf",
+      "purpose": "Open Library positive and negative verifier controls"
+    },
+    {
+      "file": "billing-probe.zip",
+      "run": 45748050866,
+      "purpose": "DeepSeek V4 Flash metering for the upstream pricing contribution",
+      "sha256": "9b97b1f304cf39fd10e49f06c363643f9181c1a97cae7c826c2220ba1e1f9718"
+    }
+  ]
+}

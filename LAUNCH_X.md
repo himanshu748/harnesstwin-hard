@@ -1,1 +1,1 @@
-HarnessTwin Hard is set up to compare Pi, OpenCode, and mini-SWE-agent on the same GMI Cloud model and SWE-bench Pro V2 HARD-51 tasks. All three passed offline connectivity checks, and the official verifier controls passed. Live scores are pending. https://github.com/himanshu748/harnesstwin-hard
+I ran Pi, OpenCode and mini-SWE-agent on two SWE-bench Pro V2 HARD-51 tasks with GLM-5.3 Flash on GMI Cloud. The official verifier accepted 1 of 6 patches, from mini-SWE-agent. Code, data and traces: https://github.com/himanshu748/harnesstwin-hard

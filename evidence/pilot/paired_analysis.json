@@ -1,0 +1,39 @@
+{
+  "tasks": 2,
+  "trials_per_task": 1,
+  "harness_results": {
+    "mini-swe-agent": {
+      "resolved_rate": 0.5
+    },
+    "opencode": {
+      "resolved_rate": 0
+    },
+    "pi": {
+      "resolved_rate": 0
+    }
+  },
+  "paired_differences": {
+    "mini-swe-agent minus opencode": {
+      "difference": 0.5,
+      "95pct_task_bootstrap_CI": [
+        0,
+        1
+      ]
+    },
+    "mini-swe-agent minus pi": {
+      "difference": 0.5,
+      "95pct_task_bootstrap_CI": [
+        0,
+        1
+      ]
+    },
+    "opencode minus pi": {
+      "difference": 0,
+      "95pct_task_bootstrap_CI": [
+        0,
+        0
+      ]
+    }
+  },
+  "method": "paired task bootstrap; 0/1 verified outcomes only"
+}
