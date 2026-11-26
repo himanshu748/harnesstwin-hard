@@ -46,6 +46,17 @@ class RelayBudgetTests(unittest.TestCase):
             self.assertEqual(budget.charged, Decimal("0.0022"))
             self.assertIsNone(budget.begin())
 
+    def test_verified_cached_input_rate_only_affects_settled_usage(self):
+        with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmp:
+            budget = Budget("gmi/model", 1_000_000, 8192, 1.40, 4.40, 2.50, 2, None,
+                            Path(tmp) / "usage.jsonl", cache_rate=0.28)
+            call = budget.begin()
+            self.assertEqual(budget.charged, Decimal("1.4360448"))
+            usage = {"prompt_tokens": 4000, "completion_tokens": 1000,
+                     "prompt_tokens_details": {"cached_tokens": 3000}}
+            budget.finish(call, usage, 200, set(), 1.0)
+            self.assertEqual(budget.charged, Decimal("0.00664"))
+
     def test_evidence_requires_regular_file_and_respects_size_limit(self):
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmp:
             root = Path(tmp)

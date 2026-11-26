@@ -78,12 +78,13 @@ def inventory_failure(exc):
 
 
 class Budget:
-    def __init__(self, model, context, max_output, input_rate, output_rate, cap, calls, effort, log):
+    def __init__(self, model, context, max_output, input_rate, output_rate, cap, calls, effort, log, *, cache_rate=None):
         self.model = model
         self.context = context
         self.max_output = max_output
         self.input_rate = Decimal(str(input_rate))
         self.output_rate = Decimal(str(output_rate))
+        self.cache_rate = Decimal(str(cache_rate)) if cache_rate is not None else self.input_rate
         self.cap = Decimal(str(cap))
         self.max_calls = calls
         self.effort = effort
@@ -95,8 +96,8 @@ class Budget:
         self.lock = threading.Lock()
         self.reserve = self.price(context, max_output)
 
-    def price(self, prompt, output):
-        return (prompt * self.input_rate + output * self.output_rate) / 1_000_000
+    def price(self, prompt, output, cached=0):
+        return ((prompt - cached) * self.input_rate + cached * self.cache_rate + output * self.output_rate) / 1_000_000
 
     def begin(self):
         with self.lock:
@@ -111,19 +112,23 @@ class Budget:
         prompt = (usage or {}).get("prompt_tokens")
         completion = (usage or {}).get("completion_tokens")
         valid = all(type(n) is int and n >= 0 for n in (prompt, completion))
-        actual = self.price(prompt, completion) if valid else self.reserve
+        cached = ((usage or {}).get("prompt_tokens_details") or {}).get("cached_tokens")
+        if not valid or type(cached) is not int or not 0 <= cached <= prompt:
+            cached = 0
+        settled = self.price(prompt, completion, cached) if valid else self.reserve
         with self.lock:
             if valid and prompt <= self.context and completion <= self.max_output:
-                self.charged += actual - self.reserve
+                self.charged += settled - self.reserve
             elif valid:
-                self.charged += max(actual - self.reserve, Decimal(0))
+                self.charged += max(settled - self.reserve, Decimal(0))
                 self.cap = self.charged
             self.errors += status != 200
             with self.log.open("a", encoding="utf-8") as f:
                 f.write(json.dumps({
                     "call": call, "status": status, "usage": usage, "returned_model": provider_model,
                     "tool_names": sorted(tool_names), "seconds": round(duration, 3),
-                    "estimated_usd_uncached": str(actual) if valid else None,
+                    "estimated_usd_uncached": str(self.price(prompt, completion)) if valid else None,
+                    "estimated_usd_list_with_reported_cache": str(settled) if valid else None,
                     "budget_charge_usd": str(self.charged),
                 }) + "\n")
 

@@ -183,7 +183,8 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
     usage_file = run_dir / "usage.jsonl"
     budget = Budget(SETTINGS["model"], SETTINGS["context_ceiling"], SETTINGS["max_completion_tokens_per_call"],
                     SETTINGS["input_usd_per_million_upper_rate"], SETTINGS["output_usd_per_million_upper_rate"],
-                    SETTINGS["attempt_cap_usd"], SETTINGS["max_calls"], SETTINGS["reasoning_effort"], usage_file)
+                    SETTINGS["attempt_cap_usd"], SETTINGS["max_calls"], SETTINGS["reasoning_effort"], usage_file,
+                    cache_rate=SETTINGS.get("cache_usd_per_million_upper_rate"))
     agent_limit = 30 if probe else SETTINGS["agent_seconds"]
     start = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="ht-") as socket_dir:
@@ -287,6 +288,13 @@ def main():
                 within_cap = False
             if not within_cap:
                 raise SystemExit("The authenticated main-model pricing is missing or exceeds the approved rates")
+            try:
+                cache_rate = Decimal(str(pricing.get("input_cache_read"))) * 1_000_000
+                if cache_rate.is_finite() and 0 < cache_rate <= rates["prompt"]:
+                    rates["cache_read"] = cache_rate
+                    SETTINGS["cache_usd_per_million_upper_rate"] = str(cache_rate)
+            except InvalidOperation:
+                pass
             write_json(out / "pricing.json", {"serving_id": SETTINGS["model"],
                        "listed_usd_per_million": {name: str(value) for name, value in rates.items()}})
     first_two = TASKS[:2]
