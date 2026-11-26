@@ -1,0 +1,48 @@
+[
+  {
+    "source_run": "45752847996",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "pi",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "error",
+    "tool_records_by_name": {
+      "bash": 37,
+      "read": 8,
+      "edit": 4
+    },
+    "tool_failures_observed": 8,
+    "successful_tool_after_failure": true
+  },
+  {
+    "source_run": "45752847996",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "opencode",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "error",
+    "tool_records_by_name": {
+      "bash": 29,
+      "glob": 1,
+      "read": 4,
+      "grep": 2,
+      "write": 1,
+      "edit": 7
+    },
+    "tool_failures_observed": 6,
+    "successful_tool_after_failure": true
+  },
+  {
+    "source_run": "45752847996",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "mini-swe-agent",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "LimitsExceeded",
+    "tool_records_by_name": {
+      "bash": 43
+    },
+    "tool_failures_observed": 6,
+    "successful_tool_after_failure": true
+  }
+]

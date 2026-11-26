@@ -1,0 +1,38 @@
+{
+  "model": "zai-org/GLM-5.3",
+  "harnesses": {
+    "pi": {
+      "observed_attempts": 1,
+      "statuses": {
+        "verified_resolved": 1
+      },
+      "first_trial_resolved": 1,
+      "first_trial_verified": 1,
+      "first_trial_pass_at_1": 1.0,
+      "estimated_uncached_usd_for_attempts_with_usage": "3.138622800",
+      "attempts_with_usage_cost": 1
+    },
+    "opencode": {
+      "observed_attempts": 1,
+      "statuses": {
+        "verified_resolved": 1
+      },
+      "first_trial_resolved": 1,
+      "first_trial_verified": 1,
+      "first_trial_pass_at_1": 1.0,
+      "estimated_uncached_usd_for_attempts_with_usage": "2.707375200",
+      "attempts_with_usage_cost": 1
+    },
+    "mini-swe-agent": {
+      "observed_attempts": 1,
+      "statuses": {
+        "verified_resolved": 1
+      },
+      "first_trial_resolved": 1,
+      "first_trial_verified": 1,
+      "first_trial_pass_at_1": 1.0,
+      "estimated_uncached_usd_for_attempts_with_usage": "2.532321400",
+      "attempts_with_usage_cost": 1
+    }
+  }
+}

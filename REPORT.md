@@ -38,7 +38,7 @@ Both Pi and both OpenCode traces ended on the provider completion limit. On qute
 
 ![qutebrowser control chart comparing required tests passed by the empty and reference patches](evidence/controls.svg)
 
-All 24 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
+All 25 local HarnessTwin tests passed. Fresh official qutebrowser containers started at commit `fce306d5f184f185b660f35ec2808b6745d57520` with image digest `sha256:b35c588560c0041a3d0989696ade4a1ae1e5123e3e07b27240fb918d16237747`. Open Library started at commit `0d5acead6fdfb5e41a1d29a076a6e89ad1a39027` with image digest `sha256:5b48f8cc79656b7a76a29d704d6b486603a6396333ba11c70a144a9a799ccea7`. The agent and verifier base commits match for every scored attempt.
 
 [qutebrowser control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45702666035) · [Open Library control job](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45749163661)
 
@@ -84,9 +84,21 @@ The original 8,192-token GLM-5.3 job was canceled during the first task when the
 
 The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls. Both the model tier and the completion cap change from the Flash pilot to the main trial. A difference across those runs combines both changes.
 
-At 09:55 IST, the live main workflow logged `pi: verified_resolved` for qutebrowser on trial 1. This status requires official reward `1`, an official `RESULT: PASSED` line and matching agent and verifier base commits. The job continued to OpenCode. The main artifact and paired results will be available when the job finishes.
+All three harnesses resolved the qutebrowser task on the first 32K trial. The three distinct patches each passed 1,869 of 1,869 required tests. All 120 accepted model requests used a 32,768-token completion cap. The largest responses for Pi and OpenCode were 16,083 and 18,852 tokens, respectively. None of the 120 responses ended with a completion-length limit.
 
-[Active 32K workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Live verifier log](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996/job/139684475962#logs) · [Replacement configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
+| Harness | Official reward | Agent time (s) | Model calls | Requested tools | Output tokens | Patch bytes |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Pi | 1 | 1,049.25 | 40 | 49 | 75,540 | 9,390 |
+| OpenCode | 1 | 669.63 | 40 | 44 | 55,751 | 21,100 |
+| mini-SWE-agent | 1 | 393.81 | 40 | 40 | 32,529 | 20,725 |
+
+![Verified outcomes and agent durations for the first 32K task](evidence/hard-task-1/comparison.svg)
+
+OpenCode exited with code `1` after the local relay rejected retries at the shared 40-call cap. The original runner recorded `agent_error` despite the passing verifier. The patch hash, official reward, all 40 successful upstream responses and final relay-origin 429 were checked against the downloaded artifact. The corrected runner keeps both the exit information and the verified outcome for this specific budget termination. It still excludes unrelated runtime errors. The first job was stopped after the three verdicts to inspect the trace. The continuation keeps the same experimental settings and restarts task 2 in fresh environments. The interrupted OpenCode attempt on task 2 is retained in the original archive as diagnostic evidence.
+
+The completed task used $2.259237 at list rates with reported cache reads. The GMI console showed cumulative GLM-5.3 charges of $1.54 including the superseded 8K job. Subtracting the earlier $0.24 leaves about $1.30 through the 32K checkpoint, which includes partial task 2. Extrapolating the one completed 32K task yields $22.59 for 30 attempts at list rates with its cache read mix, or approximately $11.30 at the observed 50% discount. For 90 attempts those values are $67.78 and $33.89. These projections are sensitive to task difficulty, token use, cache reuse and promotion. The continuation has a $42.00 envelope accounting for prior jobs and the interrupted request reserve.
+
+[First 32K workflow and raw evidence](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Task 1 JSON](evidence/hard-task-1/results.json) · [Task 1 CSV](evidence/hard-task-1/results.csv) · [Task 1 tool trace summary](evidence/hard-task-1/tool_traces.json) · [Tasks 2–10 continuation](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45757464298) · [32K configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
 
 ## Upstream contribution
 

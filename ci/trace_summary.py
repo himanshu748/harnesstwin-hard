@@ -56,6 +56,8 @@ def agent_trace(archive, prefix, harness):
             elif harness == "opencode":
                 if kind == "step_finish":
                     latest = event["part"].get("reason")
+                if kind == "error":
+                    latest = "error"
                 if kind == "tool_use":
                     part = event["part"]
                     state = part["state"]

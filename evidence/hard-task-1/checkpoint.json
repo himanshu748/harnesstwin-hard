@@ -1,0 +1,22 @@
+{
+  "source_run": 45752847996,
+  "source_archive_sha256": "ae02f55bb68d4a6bc960d9e363df060132c96a44aaad2a5213aeede10c872228",
+  "continuation_run": 45757464298,
+  "continuation_budget_usd": "42.00",
+  "model": "zai-org/GLM-5.3",
+  "trial": 1,
+  "model_call_count": 120,
+  "requested_completion_token_cap": 32768,
+  "accepted_requests_at_requested_cap": 120,
+  "provider_completion_length_stops": 0,
+  "largest_completion_tokens_by_harness": {"pi": 16083, "opencode": 18852, "mini-swe-agent": 4844},
+  "metered_input_tokens": 5469651,
+  "metered_cache_read_tokens": 5367616,
+  "metered_output_tokens": 163820,
+  "metered_reasoning_tokens": 129954,
+  "list_cost_with_reported_cache_usd_completed_task": "2.259237160",
+  "provider_console_cumulative_glm_5_3_usd_displayed": "1.54",
+  "provider_console_superseded_glm_5_3_usd_displayed": "0.24",
+  "derived_difference_usd_including_partial_task_2": "1.30",
+  "provider_console_discount_displayed": "50% off"
+}

@@ -1,1 +1,1 @@
-I ran Pi, OpenCode and mini-SWE-agent on two SWE-bench Pro V2 HARD-51 tasks with GLM-5.3 Flash on GMI Cloud. The official verifier accepted 1 of 6 patches, from mini-SWE-agent. Code, data and traces: https://github.com/himanshu748/harnesstwin-hard
+Pi, OpenCode and mini-SWE-agent all passed the official verifier on the same SWE-bench Pro V2 HARD-51 task with GLM-5.3 at 32K on GMI Cloud. Our two-task Flash pilot resolved 1 of 6 attempts. Code, traces and costs: https://github.com/himanshu748/harnesstwin-hard
