@@ -22,6 +22,15 @@ For live runs, inject the key from your secret manager into the host process and
 
 ## Main benchmark
 
+Use the workflow's `hard-flash` phase for the full 51-task comparison on GMI Cloud's `zai-org/GLM-5.3-Flash`. It runs one trial across nine disjoint task ranges with at most three runners active. The host relay omits both completion-limit fields, leaving the provider's native limits in force. All three harnesses share the same 40-call limit, 19-minute agent limit and $0.90 per-attempt reserve ceiling. Each shard has a $4.00 budget and starts a task only when all three attempts can be funded.
+
+The **Flash HARD-51 analysis** workflow collects the completed shard artifacts. It publishes verified outcomes, missing coverage, paired analysis and tool traces. For a local aggregation of downloaded shard ZIP files:
+
+```sh
+python3 ci/flash_report.py RUN_ID=shard-1.zip RUN_ID=shard-7.zip --out flash-results
+python3 ci/plot_comparison.py flash-results/attempts.json flash-results/comparison.svg --coverage flash-results/coverage.json
+```
+
 The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID and sets a 32,768-token completion limit per model call for all three harnesses. Its relay allows up to 600 seconds of upstream socket inactivity, bounded by the time left when a call starts, so clients that request a full response can use the larger completion budget. The job checks the model's live list rates before inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
 
 After the main jobs upload artifacts, collect the ZIPs from that model and plot trial 1. Add more `RUN_ID=PATH` arguments when the same configuration was used across more jobs.

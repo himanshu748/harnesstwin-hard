@@ -1,0 +1,73 @@
+name: Flash HARD-51 analysis
+on:
+  workflow_run:
+    workflows: [HARD-51 benchmark]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run:
+        description: Full Flash workflow run ID
+        type: number
+        required: true
+permissions:
+  actions: read
+  contents: read
+jobs:
+  analyze:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Collect and analyze Flash evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN: ${{ inputs.source_run || github.event.workflow_run.id }}
+        run: |
+          pattern="harnesstwin-hard-flash-$SOURCE_RUN-"
+          count=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN/artifacts" \
+            --jq '[.artifacts[].name | select(startswith("'"$pattern"'"))] | length')
+          if [ "$count" -eq 0 ]; then exit 0; fi
+          gh run download "$SOURCE_RUN" --repo "$GITHUB_REPOSITORY" --pattern "$pattern*" --dir shards
+          python3 - <<'PY'
+          import re
+          import os
+          import shutil
+          import subprocess
+          from pathlib import Path
+
+          source = os.environ["SOURCE_RUN"]
+          folders = sorted((p for p in Path("shards").iterdir() if p.is_dir()),
+                           key=lambda path: int(path.name.rsplit("-", 1)[-1]))
+          archives = [f"{source}={shutil.make_archive(str(folder), 'zip', root_dir=folder)}" for folder in folders]
+          plan = next((folder / "plan.json" for folder in folders if (folder / "plan.json").is_file()), None)
+          if plan is None:
+              Path("flash-results").mkdir()
+              Path("flash-results/REPORT.md").write_text("The Flash shards uploaded no official task plan. Check setup and pricing logs.\n")
+          else:
+              trials = {int(trial) for folder in folders for trial in
+                        re.findall(r'"trial"\s*:\s*(\d+)', (folder / "results.json").read_text())}
+              if len(trials) > 1:
+                  raise SystemExit("The artifact set spans multiple trials")
+              trial = str(next(iter(trials), 1))
+              subprocess.run(["python3", "ci/flash_report.py", *archives, "--trial", trial,
+                              "--out", "flash-results"], check=True)
+              subprocess.run(["python3", "ci/trace_summary.py", *[item for item, folder in zip(archives, folders)
+                              if (folder / "plan.json").is_file()], "--out", "flash-results/tool_traces.json"], check=True)
+          PY
+          cat flash-results/REPORT.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Plot recorded outcomes and latency
+        if: ${{ hashFiles('flash-results/results.csv') != '' }}
+        run: |
+          python3 -m venv plot-env
+          plot-env/bin/python -m pip install matplotlib==3.10.8
+          trial=$(python3 -c 'import json; print(json.load(open("flash-results/coverage.json"))["trial"])')
+          plot-env/bin/python ci/plot_comparison.py flash-results/attempts.json flash-results/comparison.svg \
+            --coverage flash-results/coverage.json --trial "$trial"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ always() && hashFiles('flash-results/REPORT.md') != '' }}
+        with:
+          name: flash-hard51-study
+          path: flash-results/
+          retention-days: 30

@@ -2,6 +2,14 @@
 
 26 November 2026 · Himanshu Kumar
 
+## Full HARD-51 run on Flash
+
+The current comparison schedules one attempt per harness on every official HARD-51 task with `zai-org/GLM-5.3-Flash`, for 153 attempts. The relay omits `max_tokens` and `max_completion_tokens`. GMI Cloud's native generation limits apply. The local harness adapters retain an output-size hint for context management. All harnesses share the 40-call and 19-minute attempt limits. Nine shards each have a $4 ceiling, for a $36 maximum for this sweep. The reporting workflow counts missing or unverified trials alongside official outcomes and analyzes the tasks with verdicts from all three harnesses.
+
+Using the first 32K GLM-5.3 task's token usage and cache mix as a pricing scenario, one full Flash sweep would cost about $13.17 at list rates. Real costs depend on Flash behavior, the provider's native completion behavior and cross-task cache reuse. Standard public GitHub runner compute is free.
+
+[Full Flash workflow](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45763364797) · [Flash settings](ci/hard-flash-settings.json) · [GMI model pricing](https://www.gmicloud.ai/en/blog/chinese-language-agents-glm-5-3-managed-environment)
+
 This experiment measures how the harness changes task resolution, tool use, runtime and token use when model serving, tasks and resource budgets are held fixed. The pilot uses `zai-org/GLM-5.3-Flash` through GMI Cloud. The authenticated inventory also returned `zai-org/GLM-5.3`, both DeepSeek V4.1 Flash identifiers in the saved inventory, and `moonshotai/kimi-k3`.
 
 [Authenticated inventory](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45747559909) · [Serving IDs](evidence/inventory.json)
@@ -101,6 +109,8 @@ OpenCode exited with code `1` after the local relay rejected retries at the shar
 The completed task used $2.259237 at list rates with reported cache reads. The GMI console showed cumulative GLM-5.3 charges of $1.54 including the superseded 8K job. Subtracting the earlier $0.24 leaves about $1.30 through the 32K checkpoint, which includes partial task 2. Extrapolating the one completed 32K task yields $22.59 for 30 attempts at list rates with its cache read mix, or approximately $11.30 at the observed 50% discount. For 90 attempts those values are $67.78 and $33.89. These projections are sensitive to task difficulty, token use, cache reuse and promotion. The continuation has a $42.00 envelope accounting for prior jobs and the interrupted request reserve.
 
 [First 32K workflow and raw evidence](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45752847996) · [Task 1 JSON](evidence/hard-task-1/results.json) · [Task 1 CSV](evidence/hard-task-1/results.csv) · [Task 1 tool trace summary](evidence/hard-task-1/tool_traces.json) · [Tasks 2–10 continuation](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45757464298) · [32K configuration](ci/hard-settings.json) · [Superseded workflow evidence](evidence/superseded-hard.json)
+
+The higher-cost run stopped during task 3 when the study moved to Flash. Task 2 had two official unresolved verdicts and one mini-SWE-agent runtime error. Task 3 had two official unresolved verdicts and an interrupted OpenCode attempt. The checkpoint includes both completed comparator runs. [32K checkpoint JSON](evidence/glm53-32k-checkpoint/attempts.json) · [Original continuation archive](https://github.com/himanshu748/harnesstwin-hard/actions/runs/45757464298)
 
 ## Upstream contribution
 

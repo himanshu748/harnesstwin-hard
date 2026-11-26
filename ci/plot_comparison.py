@@ -21,14 +21,18 @@ def main():
     parser.add_argument("attempts", type=Path)
     parser.add_argument("output", type=Path)
     parser.add_argument("--trial", type=int, default=1)
+    parser.add_argument("--coverage", type=Path, help="Use the enrolled task order from a full study")
     args = parser.parse_args()
     rows = [row for row in json.loads(args.attempts.read_text()) if row["trial"] == args.trial]
     models = {row["model"] for row in rows}
     if len(models) != 1:
         parser.error("Provide one model with attempts for the selected trial")
 
-    official_tasks = json.loads(Path(__file__).with_name("tasks.json").read_text())
-    tasks = [task for task in official_tasks if any(row["task_id"] == task for row in rows)]
+    if args.coverage:
+        tasks = official_tasks = json.loads(args.coverage.read_text())["task_order"]
+    else:
+        official_tasks = json.loads(Path(__file__).with_name("tasks.json").read_text())
+        tasks = [task for task in official_tasks if any(row["task_id"] == task for row in rows)]
     if not tasks:
         parser.error("Found no preregistered benchmark tasks")
     task_positions = {task: index for index, task in enumerate(tasks)}
@@ -40,7 +44,7 @@ def main():
     by_harness = {h: [by_attempt[h, task] for task in tasks if (h, task) in by_attempt] for h in HARNESSES}
 
     plt.rcParams.update({"svg.fonttype": "none", "font.size": 10})
-    fig, axes = plt.subplots(2, 1, figsize=(max(8, len(tasks) * 0.8), 6.3), layout="constrained")
+    fig, axes = plt.subplots(2, 1, figsize=(min(16, max(8, len(tasks) * 0.8)), 6.3), layout="constrained")
     outcome_axis, time_axis = axes
     outcome_handles = {}
     for height, harness in enumerate(HARNESSES):
@@ -59,7 +63,8 @@ def main():
             time_axis.vlines(middle, height - 0.22, height + 0.22, color="#263142", linewidth=2)
 
     outcome_axis.set_title("Official patch replay by task", loc="left", fontweight="bold")
-    outcome_axis.set_xticks(range(len(tasks)), [f"Task {official_tasks.index(task) + 1}" for task in tasks])
+    outcome_axis.set_xticks(range(len(tasks)), [str(official_tasks.index(task) + 1) for task in tasks])
+    outcome_axis.set_xlabel("HARD-51 task number · blank means no recorded attempt")
     outcome_axis.set_xlim(-0.5, len(tasks) - 0.5)
     outcome_axis.legend(outcome_handles.values(), outcome_handles.keys(), loc="upper left", bbox_to_anchor=(0, -0.16),
                         frameon=False, ncols=len(outcome_handles))
