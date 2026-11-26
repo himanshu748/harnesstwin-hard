@@ -42,6 +42,29 @@ def inventory():
     return models
 
 
+def inventory_failure(exc):
+    """Classify a refusal without including provider response text or headers."""
+    raw = exc.read(8192).decode("utf-8", errors="ignore").lower()
+    content_type = exc.headers.get_content_type()
+    reasons = {
+        "edge_challenge": ("cf-challenge", "just a moment", "challenge-platform"),
+        "network_or_region_policy": ("proxy denied", "network policy", "region is not supported", "access from your location", "blocked by"),
+        "org_or_project_scope": ("x-organization-id", "project id", "organization id", "not authorized for this organization"),
+        "invalid_credential": ("invalid api key", "invalid authorization", "invalid token", "authentication failed", "key is disabled"),
+        "account_gate": ("insufficient", "credits", "payment required", "billing"),
+        "permission_denied": ("permission", "forbidden", "access denied", "not authorized"),
+    }
+    category = next((name for name, terms in reasons.items() if any(term in raw for term in terms)), "unclassified")
+    if exc.headers.get("cf-mitigated", "").lower() == "challenge":
+        category = "edge_challenge"
+    return {
+        "http_status": exc.code,
+        "response_format": {"application/json": "json", "text/html": "html"}.get(content_type, "other"),
+        "cloudflare_ray_present": bool(exc.headers.get("cf-ray")),
+        "category": category,
+    }
+
+
 class Budget:
     def __init__(self, model, context, max_output, input_rate, output_rate, cap, calls, effort, log):
         self.model = model

@@ -3,14 +3,29 @@ import sys
 import tempfile
 import unittest
 from decimal import Decimal
+from email.message import Message
+from io import BytesIO
 from pathlib import Path
+from urllib.error import HTTPError
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
-from gateway import Budget
+from gateway import Budget, inventory_failure
 from run import regular_file
 
 
 class RelayBudgetTests(unittest.TestCase):
+    def test_inventory_refusal_never_contains_provider_body(self):
+        headers = Message()
+        headers["Content-Type"] = "application/json"
+        error = HTTPError("https://api.gmi-serving.com/v1/models", 403, "", headers,
+                          BytesIO(b'{"error":"Invalid API key example-private-value"}'))
+        self.assertEqual(inventory_failure(error), {
+            "http_status": 403,
+            "response_format": "json",
+            "cloudflare_ray_present": False,
+            "category": "invalid_credential",
+        })
+
     def test_missing_usage_keeps_reservation_and_blocks_another_call(self):
         with tempfile.TemporaryDirectory(dir=Path.cwd()) as tmp:
             budget = Budget("gmi/model", 1_000_000, 8192, 0.15, 0.50, 0.20, 4, None,

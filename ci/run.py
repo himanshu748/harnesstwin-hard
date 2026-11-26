@@ -19,7 +19,7 @@ import uuid
 from decimal import Decimal
 from pathlib import Path
 
-from gateway import Budget, Relay, inventory
+from gateway import Budget, Relay, inventory, inventory_failure
 
 CI = Path(__file__).resolve().parent
 SETTINGS = json.loads((CI / "settings.json").read_text())
@@ -241,7 +241,9 @@ def main():
         try:
             models = inventory()
         except urllib.error.HTTPError as exc:
-            raise SystemExit(f"Authenticated GMI inventory request failed: HTTP {exc.code}") from None
+            diagnostic = inventory_failure(exc)
+            write_json(out / "inventory.json", diagnostic)
+            raise SystemExit(f"Authenticated GMI inventory request failed: {json.dumps(diagnostic)}") from None
         except ValueError as exc:
             raise SystemExit(str(exc)) from None
         write_json(out / "inventory.json", {
