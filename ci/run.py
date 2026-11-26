@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute a preregistered HARD-51 subset in fresh Docker containers."""
+"""Execute official HARD-51 tasks in fresh Docker containers."""
 from __future__ import annotations
 
 import argparse
@@ -79,7 +79,7 @@ def write_json(path, data):
 def prepare_model_config(destination):
     model = SETTINGS["model"]
     context = SETTINGS["context_ceiling"]
-    output = SETTINGS["max_completion_tokens_per_call"]
+    output = SETTINGS["max_completion_tokens_per_call"] or SETTINGS["client_output_hint"]
     url = "http://127.0.0.1:18981/v1"
     write_json(destination / "models.json", {"providers": {"ht": {
         "apiKey": "relay-only", "baseUrl": url, "api": "openai-completions",
@@ -249,26 +249,30 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=[
         "inventory", "controls", "controls-second", "smoke", "triad", "second",
-        "pilot", "resume-pilot", "plan", "hard",
+        "pilot", "resume-pilot", "plan", "hard", "hard-flash",
     ])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("run-evidence"))
     parser.add_argument("--first-task", type=int, default=1)
     parser.add_argument("--task-count", type=int, default=10)
     parser.add_argument("--trial", type=int, default=1)
-    parser.add_argument("--phase-budget", type=Decimal, default=Decimal("47.50"))
+    parser.add_argument("--phase-budget", type=Decimal)
     ns = parser.parse_args()
-    hard = ns.mode == "hard"
+    hard = ns.mode in {"hard", "hard-flash"}
     if hard:
-        SETTINGS.update(json.loads((CI / "hard-settings.json").read_text()))
-        if not (1 <= ns.first_task <= ns.first_task + ns.task_count - 1 <= len(TASKS) and 1 <= ns.trial <= 3):
+        profile = "hard-flash-settings.json" if ns.mode == "hard-flash" else "hard-settings.json"
+        SETTINGS.update(json.loads((CI / profile).read_text()))
+        task_total = 51 if ns.mode == "hard-flash" else len(TASKS)
+        if not (1 <= ns.first_task <= ns.first_task + ns.task_count - 1 <= task_total and 1 <= ns.trial <= 3):
             parser.error("Specify a valid HARD task range and trial number from 1 to 3")
-        if not ns.phase_budget.is_finite() or not 0 < ns.phase_budget <= Decimal(str(SETTINGS["hard_phase_ceiling_usd"])):
-            parser.error("Hard-phase budget must be positive and at most $47.50")
+        ceiling = Decimal(str(SETTINGS["hard_phase_ceiling_usd"]))
+        ns.phase_budget = ceiling if ns.phase_budget is None else ns.phase_budget
+        if not ns.phase_budget.is_finite() or not 0 < ns.phase_budget <= ceiling:
+            parser.error(f"Phase budget must be positive and at most ${ceiling:.2f}")
     out = ns.out.resolve()
     out.mkdir(parents=True, exist_ok=False)
     save_results(out, [])
-    if ns.mode in {"inventory", "triad", "second", "pilot", "resume-pilot", "hard"}:
+    if hard or ns.mode in {"inventory", "triad", "second", "pilot", "resume-pilot"}:
         try:
             models = inventory()
         except urllib.error.HTTPError as exc:
@@ -308,29 +312,33 @@ def main():
                 pass
             write_json(out / "pricing.json", {"serving_id": SETTINGS["model"],
                        "listed_usd_per_million": {name: str(value) for name, value in rates.items()}})
+    if not ns.dataset:
+        parser.error("--dataset is required")
+    source = git_show(ns.dataset, "v2/hard51_ids.txt")
+    if hashlib.sha256(source).hexdigest() != SETTINGS["hard51_sha256"]:
+        raise SystemExit("HARD-51 checksum mismatch")
+    official_ids = source.decode().splitlines()
+    if len(official_ids) != 51 or len(set(official_ids)) != 51 or len(set(TASKS)) != 10 or not set(TASKS) <= set(official_ids):
+        raise SystemExit("Invalid official HARD-51 list or preregistered subset")
+    task_order = TASKS + [task for task in official_ids if task not in TASKS] if ns.mode == "hard-flash" else TASKS
     first_two = TASKS[:2]
     control_run = ns.mode in {"controls", "controls-second"}
     selected = {
         "plan": TASKS, "pilot": first_two, "resume-pilot": first_two,
         "second": TASKS[1:2], "controls-second": TASKS[1:2],
-        "hard": TASKS[ns.first_task - 1:ns.first_task - 1 + ns.task_count],
     }.get(ns.mode, TASKS[:1])
+    if hard:
+        selected = task_order[ns.first_task - 1:ns.first_task - 1 + ns.task_count]
     attempts = [
-        (task, HARNESSES[(TASKS.index(task) + shift + ns.trial - 1) % len(HARNESSES)])
+        (task, HARNESSES[(task_order.index(task) + shift + ns.trial - 1) % len(HARNESSES)])
         for task in selected for shift in range(len(HARNESSES))
     ]
     if ns.mode == "resume-pilot":
         attempts = [(task, harness) for task, harness in attempts
                     if task != first_two[0] or harness == "mini-swe-agent"]
     planned_cost = Decimal(str(SETTINGS["attempt_cap_usd"])) * len(attempts) + Decimal(str(SETTINGS["compute_reserve_usd"]))
-    if not ns.dataset:
-        parser.error("--dataset is required")
-    source = git_show(ns.dataset, "v2/hard51_ids.txt")
-    if hashlib.sha256(source).hexdigest() != SETTINGS["hard51_sha256"]:
-        raise SystemExit("HARD-51 checksum mismatch")
-    if len(set(TASKS)) != 10 or not set(TASKS) <= set(source.decode().splitlines()):
-        raise SystemExit("Invalid preregistered HARD-51 task subset")
-    write_json(out / "plan.json", {"settings": SETTINGS, "mode": ns.mode, "attempts": attempts})
+    write_json(out / "plan.json", {"settings": SETTINGS, "mode": ns.mode, "attempts": attempts,
+                                     "task_order": task_order})
     if ns.mode == "plan":
         return
     if not control_run and not hard and planned_cost >= Decimal(str(SETTINGS["mission_cap_usd"])):
@@ -375,7 +383,7 @@ def main():
         if control_run:
             break
         for _, harness in (item for item in attempts if item[0] == task):
-            print(f"Starting {harness} on preregistered task {TASKS.index(task) + 1}", flush=True)
+            print(f"Starting {harness} on HARD-51 task {task_order.index(task) + 1}", flush=True)
             run_dir = task_dir / harness
             run_dir.mkdir()
             row = run_agent(image, official_image, harness, config, tests, run_dir, env, probe=ns.mode == "smoke")
@@ -393,6 +401,10 @@ def main():
                 })
             save_results(out, results)
             print(f"{harness}: {row['status']}", flush=True)
+            print("Benchmark metrics " + json.dumps({key: results[-1].get(key) for key in (
+                "task_id", "harness", "trial", "model", "resolved", "status", "agent_seconds",
+                "input_tokens", "output_tokens", "reasoning_tokens", "model_calls", "budget_upper_usd",
+            )}), flush=True)
             if ns.mode == "resume-pilot" and task == first_two[0] and row["resolved"] is None:
                 raise SystemExit("Mini-SWE-agent retry needs diagnosis before the second task")
         shutil.rmtree(tests)

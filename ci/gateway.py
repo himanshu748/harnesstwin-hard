@@ -83,6 +83,7 @@ class Budget:
         self.model = model
         self.context = context
         self.max_output = max_output
+        self.output_accounting_bound = context if max_output is None else max_output
         self.input_rate = Decimal(str(input_rate))
         self.output_rate = Decimal(str(output_rate))
         self.cache_rate = Decimal(str(cache_rate)) if cache_rate is not None else self.input_rate
@@ -97,7 +98,7 @@ class Budget:
         self.denied = 0
         self.errors = 0
         self.lock = threading.Lock()
-        self.reserve = self.price(context, max_output)
+        self.reserve = self.price(context, self.output_accounting_bound)
 
     def price(self, prompt, output, cached=0):
         return ((prompt - cached) * self.input_rate + cached * self.cache_rate + output * self.output_rate) / 1_000_000
@@ -126,7 +127,7 @@ class Budget:
             cached = 0
         settled = self.price(prompt, completion, cached) if valid else self.reserve
         with self.lock:
-            if valid and prompt <= self.context and completion <= self.max_output:
+            if valid and prompt <= self.context and completion <= self.output_accounting_bound:
                 self.charged += settled - self.reserve
             elif valid:
                 self.charged += max(settled - self.reserve, Decimal(0))
@@ -142,6 +143,18 @@ class Budget:
                     "estimated_usd_list_with_reported_cache": str(settled) if valid else None,
                     "budget_charge_usd": str(self.charged),
                 }) + "\n")
+
+    def prepare_request(self, body):
+        for name in ("max_tokens", "max_completion_tokens", "reasoning_effort", "thinking"):
+            body.pop(name, None)
+        if self.max_output is not None:
+            body["max_tokens"] = self.max_output
+        body["context_length_exceeded_behavior"] = "error"
+        body["n"] = 1
+        if self.effort:
+            body["reasoning_effort"] = self.effort
+        if body.get("stream"):
+            body["stream_options"] = {"include_usage": True}
 
 
 class Relay(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
@@ -191,16 +204,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         start = time.monotonic()
         status, usage, tool_names, provider_model = 502, None, set(), None
         finish_reasons = set()
-        body.pop("max_completion_tokens", None)
-        body.pop("reasoning_effort", None)
-        body.pop("thinking", None)
-        body["max_tokens"] = budget.max_output
-        body["context_length_exceeded_behavior"] = "error"
-        body["n"] = 1
-        if budget.effort:
-            body["reasoning_effort"] = budget.effort
-        if body.get("stream"):
-            body["stream_options"] = {"include_usage": True}
+        budget.prepare_request(body)
         try:
             with gmi_request("/chat/completions", body, timeout=budget.request_timeout()) as response:
                 status = response.status

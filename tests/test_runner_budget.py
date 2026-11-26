@@ -17,6 +17,20 @@ from trace_summary import opencode_exited_at_call_limit
 
 
 class RelayBudgetTests(unittest.TestCase):
+    def test_flash_profile_inherits_provider_completion_behavior(self):
+        profile = json.loads((CI / "hard-flash-settings.json").read_text())
+        budget = Budget(profile["model"], SETTINGS["context_ceiling"], profile["max_completion_tokens_per_call"],
+                        profile["input_usd_per_million_upper_rate"], profile["output_usd_per_million_upper_rate"],
+                        profile["attempt_cap_usd"], SETTINGS["max_calls"], None, Path("usage.jsonl"))
+        body = {"max_tokens": 32768, "max_completion_tokens": 8192, "stream": True}
+        budget.prepare_request(body)
+        self.assertNotIn("max_tokens", body)
+        self.assertNotIn("max_completion_tokens", body)
+        self.assertEqual(body["stream_options"], {"include_usage": True})
+        self.assertEqual(budget.reserve, Decimal("0.6815744"))
+        self.assertEqual(budget.begin(), 1)
+        self.assertIsNone(budget.begin())
+
     def test_only_local_open_code_limit_exit_counts_as_intentional(self):
         data = {"statusCode": 429, "responseBody": json.dumps({"error": {
             "message": "Benchmark request or spending cap reached", "type": "harnesstwin_relay",
