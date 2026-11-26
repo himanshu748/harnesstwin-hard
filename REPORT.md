@@ -68,6 +68,7 @@ The pilot uses 19 minutes per agent, shorter than the official 50-minute locked 
 | --- | ---: | ---: |
 | All Flash pilot attempts, including the excluded integration failure | $0.09, as displayed by the GMI console | $0.592211 uncached list or $0.095012 with cache and promotion |
 | DeepSeek upstream billing probe | $0.00 at the precision displayed by the GMI console | $0.000471 with cache and promotion |
+| Superseded GLM-5.3 8K job | $0.24, as displayed before the 32K job reached inference | $0.452580 at list rates with reported cache reads, through the last saved request |
 | GitHub Actions standard Linux compute in the public repository | $0.00 | $0.00 |
 | GMI Agentbox, Modal, Hugging Face Jobs, Vercel | $0.00 for this execution | Unused |
 
@@ -79,7 +80,7 @@ Repricing the six scored Flash attempts at the GLM-5.3 list rates of $1.40 input
 
 ## Main GLM-5.3 run
 
-The original 8,192-token GLM-5.3 job was canceled during the first task when the requested completion cap changed. Pi and OpenCode both received reward `0` in that job. mini-SWE-agent was interrupted. The two completed attempts settled at $0.276321 at the account's list rates with reported cache reads. The partial mini-SWE-agent ledger recorded 17 calls before cancellation. Actual provider totals for the superseded job include any in-flight request and are tracked separately.
+The original 8,192-token GLM-5.3 job was canceled during the first task when the requested completion cap changed. Pi and OpenCode both received reward `0` in that job. mini-SWE-agent was interrupted. The two completed attempts settled at $0.276321 at the account's list rates with reported cache reads. The partial mini-SWE-agent ledger recorded 17 calls before cancellation. The GMI console showed $0.24 for the superseded job with a 50% discount and approximately 946.4K input tokens, 869.9K cache reads and 33.3K output tokens. Its provider totals include traffic that completed during cancellation after the last local ledger write.
 
 The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls.
 

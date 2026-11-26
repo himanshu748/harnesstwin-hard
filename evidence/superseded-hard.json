@@ -8,7 +8,13 @@
     "completed_rewards": {"pi": 0, "opencode": 0},
     "settled_conservative_list_usd_completed_attempts": "0.276320520",
     "interrupted_mini_swe_agent_calls_written": 17,
-    "interrupted_mini_swe_agent_latest_usage_ledger_charge_usd": "0.176259200"
+    "interrupted_mini_swe_agent_latest_usage_ledger_charge_usd": "0.176259200",
+    "all_saved_requests_list_with_cache_usd": "0.452579720",
+    "provider_console_amount_usd_displayed": "0.24",
+    "provider_console_discount_displayed": "50% off",
+    "provider_console_input_tokens_displayed": "946.4K",
+    "provider_console_cache_read_tokens_displayed": "869.9K",
+    "provider_console_output_tokens_displayed": "33.3K"
   },
   "superseded_32k_build_only": {
     "run": 45752533723,
