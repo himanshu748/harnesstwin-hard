@@ -21,7 +21,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def gmi_request(path, payload=None):
+def gmi_request(path, payload=None, *, timeout=180):
     key = os.environ.get("GMI_API_KEY", "").strip()
     if not key:
         raise ValueError("GMI_API_KEY is missing")
@@ -35,7 +35,7 @@ def gmi_request(path, payload=None):
         headers["X-Organization-ID"] = organization
     data = None if payload is None else json.dumps(payload).encode()
     return urllib.request.build_opener(NoRedirect()).open(
-        urllib.request.Request(BASE + path, data=data, headers=headers), timeout=180
+        urllib.request.Request(BASE + path, data=data, headers=headers), timeout=timeout
     )
 
 
@@ -78,7 +78,8 @@ def inventory_failure(exc):
 
 
 class Budget:
-    def __init__(self, model, context, max_output, input_rate, output_rate, cap, calls, effort, log, *, cache_rate=None):
+    def __init__(self, model, context, max_output, input_rate, output_rate, cap, calls, effort, log, *,
+                 cache_rate=None, upstream_timeout=180, agent_deadline=None):
         self.model = model
         self.context = context
         self.max_output = max_output
@@ -89,6 +90,8 @@ class Budget:
         self.max_calls = calls
         self.effort = effort
         self.log = log
+        self.upstream_timeout = upstream_timeout
+        self.agent_deadline = agent_deadline
         self.charged = Decimal(0)
         self.calls = 0
         self.denied = 0
@@ -101,12 +104,18 @@ class Budget:
 
     def begin(self):
         with self.lock:
-            if self.calls >= self.max_calls or self.charged + self.reserve > self.cap:
+            expired = self.agent_deadline is not None and time.monotonic() >= self.agent_deadline
+            if expired or self.calls >= self.max_calls or self.charged + self.reserve > self.cap:
                 self.denied += 1
                 return None
             self.calls += 1
             self.charged += self.reserve
             return self.calls
+
+    def request_timeout(self):
+        if self.agent_deadline is None:
+            return self.upstream_timeout
+        return max(1, min(self.upstream_timeout, self.agent_deadline - time.monotonic()))
 
     def finish(self, call, usage, status, tool_names, duration, provider_model=None, finish_reasons=()):
         prompt = (usage or {}).get("prompt_tokens")
@@ -193,7 +202,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if body.get("stream"):
             body["stream_options"] = {"include_usage": True}
         try:
-            with gmi_request("/chat/completions", body) as response:
+            with gmi_request("/chat/completions", body, timeout=budget.request_timeout()) as response:
                 status = response.status
                 self.send_response(status)
                 self.send_header("Content-Type", response.headers.get("Content-Type", "application/json"))

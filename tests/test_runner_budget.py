@@ -30,6 +30,16 @@ class RelayBudgetTests(unittest.TestCase):
                             profile["attempt_cap_usd"], SETTINGS["max_calls"], None, path / "usage.jsonl")
             self.assertEqual(budget.reserve, Decimal("1.6121856"))
 
+    def test_main_timeout_remains_within_agent_deadline(self):
+        budget = Budget("gmi/model", 1_048_576, 32768, 1.40, 4.40, 2.50, 40, None,
+                        Path("usage.jsonl"), upstream_timeout=600, agent_deadline=1140)
+        with patch("gateway.time.monotonic", return_value=0):
+            self.assertEqual(budget.request_timeout(), 600)
+        with patch("gateway.time.monotonic", return_value=900):
+            self.assertEqual(budget.request_timeout(), 240)
+        with patch("gateway.time.monotonic", return_value=1140):
+            self.assertIsNone(budget.begin())
+
     def test_inventory_refusal_never_contains_provider_body(self):
         headers = Message()
         headers["Content-Type"] = "application/json"

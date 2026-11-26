@@ -181,12 +181,14 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
     traces.mkdir()
     traces.chmod(0o777)
     usage_file = run_dir / "usage.jsonl"
+    agent_limit = 30 if probe else SETTINGS["agent_seconds"]
+    start = time.monotonic()
     budget = Budget(SETTINGS["model"], SETTINGS["context_ceiling"], SETTINGS["max_completion_tokens_per_call"],
                     SETTINGS["input_usd_per_million_upper_rate"], SETTINGS["output_usd_per_million_upper_rate"],
                     SETTINGS["attempt_cap_usd"], SETTINGS["max_calls"], SETTINGS["reasoning_effort"], usage_file,
-                    cache_rate=SETTINGS.get("cache_usd_per_million_upper_rate"))
-    agent_limit = 30 if probe else SETTINGS["agent_seconds"]
-    start = time.monotonic()
+                    cache_rate=SETTINGS.get("cache_usd_per_million_upper_rate"),
+                    upstream_timeout=SETTINGS.get("upstream_timeout_seconds", 180),
+                    agent_deadline=start + agent_limit if "upstream_timeout_seconds" in SETTINGS else None)
     with tempfile.TemporaryDirectory(prefix="ht-") as socket_dir:
         Path(socket_dir).chmod(0o755)
         with Relay(Path(socket_dir) / "gmi.sock", budget, probe=probe) as relay:
