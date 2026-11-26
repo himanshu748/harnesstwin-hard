@@ -84,13 +84,15 @@ The original 8,192-token GLM-5.3 job was canceled during the first task when the
 
 The replacement trial starts again at task 1 and schedules 30 attempts on `zai-org/GLM-5.3`, with a 32,768-token completion limit per call for all three harnesses. It uses a $47.00 ceiling within the $50 mission cap. The relay allows up to 600 seconds of socket inactivity when the attempt has that much time left. An earlier setup job was canceled during the Docker build to introduce that setting, and its artifact contains zero model calls. Both the model tier and the completion cap change from the Flash pilot to the main trial. A difference across those runs combines both changes.
 
-All three harnesses resolved the qutebrowser task on the first 32K trial. The three distinct patches each passed 1,869 of 1,869 required tests. All 120 accepted model requests used a 32,768-token completion cap. The largest responses for Pi and OpenCode were 16,083 and 18,852 tokens, respectively. None of the 120 responses ended with a completion-length limit.
+All three harnesses resolved the qutebrowser task on the first 32K trial. Each patch refactored `KeySequence` to use typed keys and modifiers for Qt compatibility and passed 1,869 of 1,869 required tests. All 120 accepted model requests used a 32,768-token completion cap. The largest responses for Pi and OpenCode were 16,083 and 18,852 tokens, respectively. None of the 120 responses ended with a completion-length limit.
 
-| Harness | Official reward | Agent time (s) | Model calls | Requested tools | Output tokens | Patch bytes |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Pi | 1 | 1,049.25 | 40 | 49 | 75,540 | 9,390 |
-| OpenCode | 1 | 669.63 | 40 | 44 | 55,751 | 21,100 |
-| mini-SWE-agent | 1 | 393.81 | 40 | 40 | 32,529 | 20,725 |
+| Harness | Required tests | Agent time (s) | Model calls | Input tokens | Cached input | Output tokens | Reasoning within output |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Pi | 1,869 / 1,869 | 1,049.25 | 40 | 2,004,462 | 1,967,360 | 75,540 | 66,078 |
+| OpenCode | 1,869 / 1,869 | 669.63 | 40 | 1,758,622 | 1,728,192 | 55,751 | 43,115 |
+| mini-SWE-agent | 1,869 / 1,869 | 393.81 | 40 | 1,706,567 | 1,672,064 | 32,529 | 20,761 |
+
+On this task, mini-SWE-agent used 56.9% fewer output tokens and took 62.5% less time than Pi. More than 97% of input tokens were cached for each harness. Input counts sum the context sent across 40 calls, including repeated prompt and history tokens. The reasoning counts are already included in output. This single matched task shows differences in resource use at the same verifier outcome.
 
 ![Verified outcomes and agent durations for the first 32K task](evidence/hard-task-1/comparison.svg)
 
