@@ -31,6 +31,8 @@ python3 ci/flash_report.py RUN_ID=shard-1.zip RUN_ID=shard-7.zip --out flash-res
 python3 ci/plot_comparison.py flash-results/attempts.json flash-results/comparison.svg --coverage flash-results/coverage.json
 ```
 
+Use `hard-flash-range` to resume a missing contiguous task range with the same model and execution settings. Set the first task, count, trial and remaining budget for the range, then include its artifact in the same local aggregation. Combine disjoint or previously missing attempts from the same trial.
+
 The `hard` workflow mode selects the authenticated `zai-org/GLM-5.3` ID and sets a 32,768-token completion limit per model call for all three harnesses. Its relay allows up to 600 seconds of upstream socket inactivity, bounded by the time left when a call starts, so clients that request a full response can use the larger completion budget. The job checks the model's live list rates before inference, rotates harness order by task and repeat, and stops before beginning a matched task when the remaining budget cannot cover all three attempts. Set the task range, repeat number, and remaining USD envelope in the workflow form. Allow for previous jobs when setting the remaining budget. Hard-mode and Flash-pilot observations are separate model strata.
 
 After the main jobs upload artifacts, collect the ZIPs from that model and plot trial 1. Add more `RUN_ID=PATH` arguments when the same configuration was used across more jobs.

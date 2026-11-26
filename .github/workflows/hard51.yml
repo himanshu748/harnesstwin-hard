@@ -7,7 +7,7 @@ on:
         required: true
         default: controls
         type: choice
-        options: [inventory, controls, smoke, triad, second, pilot, resume-pilot, controls-second, hard, hard-flash]
+        options: [inventory, controls, smoke, triad, second, pilot, resume-pilot, controls-second, hard, hard-flash, hard-flash-range]
       first_task:
         description: First task in hard mode
         type: number
@@ -21,9 +21,9 @@ on:
         type: number
         default: 1
       phase_budget:
-        description: Remaining hard-phase USD ceiling
+        description: Optional USD ceiling for a manually selected task range
         type: string
-        default: '47.00'
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -61,11 +61,14 @@ jobs:
         run: |
           args=("$MODE" --dataset official --out run-evidence)
           if [ "$MODE" = hard ]; then
-            args+=(--first-task "$FIRST_TASK" --task-count "$TASK_COUNT" --trial "$TRIAL" --phase-budget "$PHASE_BUDGET")
+            args+=(--first-task "$FIRST_TASK" --task-count "$TASK_COUNT" --trial "$TRIAL" --phase-budget "${PHASE_BUDGET:-47.00}")
           elif [ "$MODE" = hard-flash ]; then
             flash_task_count=6
             if [ "$FLASH_FIRST_TASK" = 49 ]; then flash_task_count=3; fi
             args+=(--first-task "$FLASH_FIRST_TASK" --task-count "$flash_task_count" --trial "$TRIAL")
+          elif [ "$MODE" = hard-flash-range ]; then
+            args[0]=hard-flash
+            args+=(--first-task "$FIRST_TASK" --task-count "$TASK_COUNT" --trial "$TRIAL" --phase-budget "${PHASE_BUDGET:-4.00}")
           fi
           python3 ci/run.py "${args[@]}"
       - name: Normalize evidence permissions

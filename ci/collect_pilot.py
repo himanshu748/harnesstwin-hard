@@ -8,6 +8,7 @@ from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 from zipfile import ZipFile
 
@@ -49,6 +50,11 @@ def artifact_rows(path, run_id):
                 if hashlib.sha256(patch).hexdigest() != row["patch_sha256"]:
                     raise ValueError(f"Candidate patch digest mismatch for {path_prefix}")
                 row["patch_bytes"] = len(patch)
+                verifier_log = archive.read(f"{path_prefix}/verifier/stdout.log").decode(errors="replace")
+                for label, field in (("Required tests", "verifier_tests_required"), ("Passed tests", "verifier_tests_passed")):
+                    counts = re.findall(rf"^{label}:[ \t]+(\d+)\s*$", verifier_log, flags=re.MULTILINE)
+                    if len(counts) == 1:
+                        row[field] = int(counts[0])
                 if row["agent_exit"] not in (0, 124) and row.get("agent_termination") != "benchmark_call_limit":
                     row.update(verifier_status=row["status"], verifier_resolved=reward,
                                status="agent_error", resolved=None)
