@@ -1,8 +1,10 @@
-"""Combine completed workflow artifacts, retaining failed integrations as evidence."""
+"""Combine completed workflow artifacts from one model, retaining failed attempts."""
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import csv
+from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
@@ -48,6 +50,28 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def summarize(attempts):
+    model_ids = {row["model"] for row in attempts}
+    if len(model_ids) != 1:
+        raise ValueError("Collect one model at a time to keep benchmark strata separate")
+    harnesses = {}
+    for harness in HARNESS_ORDER:
+        rows = [row for row in attempts if row["harness"] == harness]
+        status = Counter(row["status"] for row in rows)
+        first = [row["resolved"] for row in rows if row["trial"] == 1 and row.get("resolved") in (0, 1)]
+        known_costs = [Decimal(row["estimated_inference_usd"]) for row in rows if row.get("estimated_inference_usd")]
+        harnesses[harness] = {
+            "observed_attempts": len(rows),
+            "statuses": dict(status),
+            "first_trial_resolved": sum(first),
+            "first_trial_verified": len(first),
+            "first_trial_pass_at_1": sum(first) / len(first) if first else None,
+            "estimated_uncached_usd_for_attempts_with_usage": str(sum(known_costs, Decimal(0))),
+            "attempts_with_usage_cost": len(known_costs),
+        }
+    return {"model": model_ids.pop(), "harnesses": harnesses}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifacts", nargs="+", help="GitHub run ID and ZIP as RUN_ID=PATH")
@@ -59,18 +83,20 @@ def main():
         attempts.extend(artifact_rows(path, run_id))
     if not attempts:
         raise SystemExit("Artifact files contain no live attempts")
+    summary = summarize(attempts)
+    rows = [row for row in attempts if row.get("resolved") in (0, 1)]
+    scores = {(r["task_id"], r["harness"], r["trial"]): r["resolved"] for r in rows}
+    if len(scores) != len(rows):
+        raise ValueError("Duplicate scored trial in the selected archives")
     cli.out.mkdir(parents=True, exist_ok=True)
     write_json(cli.out / "attempts.json", attempts)
-    rows = [row for row in attempts if row.get("resolved") in (0, 1)]
     write_json(cli.out / "results.json", rows)
+    write_json(cli.out / "outcome_summary.json", summary)
     fields = list(dict.fromkeys(key for row in attempts for key in row))
     with (cli.out / "results.csv").open("w", newline="") as output:
         writer = csv.DictWriter(output, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
-    scores = {(r["task_id"], r["harness"], r["trial"]): r["resolved"] for r in rows}
-    if len(scores) != len(rows):
-        raise ValueError("Duplicate scored trial in the selected archives")
     if set(r["harness"] for r in rows) == set(HARNESS_ORDER):
         try:
             paired = analyze(scores)
