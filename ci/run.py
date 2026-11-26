@@ -26,6 +26,7 @@ CI = Path(__file__).resolve().parent
 SETTINGS = json.loads((CI / "settings.json").read_text())
 TASKS = json.loads((CI / "tasks.json").read_text())
 HARNESSES = ("pi", "opencode", "mini-swe-agent")
+DROID_HARNESSES = ("mini-swe-agent", "droid")
 NETWORK_RULES = ("\n\nWork only in the supplied repository. Do not use external assistance. "
                  "Leave the final source changes in the working tree.\n")
 RESULT_COLUMNS = (
@@ -97,6 +98,11 @@ def prepare_model_config(destination):
                                                "interleaved": {"field": "reasoning_content"},
                                                "limit": {"context": context, "output": output}}}}},
     })
+    if SETTINGS.get("droid_version"):
+        write_json(destination / "droid-settings.json", {"customModels": [{
+            "model": model, "displayName": "HarnessTwin", "baseUrl": url, "apiKey": "relay-only",
+            "provider": "generic-chat-completion-api", "maxOutputTokens": output, "maxContextLimit": context,
+        }]})
 
 
 def prepare_task(dataset, task, run_dir):
@@ -249,7 +255,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=[
         "inventory", "controls", "controls-second", "smoke", "triad", "second",
-        "pilot", "resume-pilot", "plan", "hard", "hard-flash",
+        "pilot", "resume-pilot", "plan", "hard", "hard-flash", "droid-comparison", "droid-smoke",
     ])
     parser.add_argument("--dataset", type=Path)
     parser.add_argument("--out", type=Path, default=Path("run-evidence"))
@@ -258,11 +264,23 @@ def main():
     parser.add_argument("--trial", type=int, default=1)
     parser.add_argument("--phase-budget", type=Decimal)
     ns = parser.parse_args()
-    hard = ns.mode in {"hard", "hard-flash"}
+    droid = ns.mode in {"droid-comparison", "droid-smoke"}
+    probe = ns.mode in {"smoke", "droid-smoke"}
+    hard = ns.mode in {"hard", "hard-flash", "droid-comparison"}
+    harnesses = DROID_HARNESSES if droid else HARNESSES
+    if droid:
+        SETTINGS.update(json.loads((CI / "droid-comparison-settings.json").read_text()))
+        sample = json.loads((CI / "droid-comparison-tasks.json").read_text())
+        comparison_tasks = sample["tasks"]
+        if sample["revision"] != SETTINGS["dataset_revision"] or len(set(comparison_tasks)) != 200 or len(comparison_tasks) != 200:
+            raise SystemExit("Expected the fixed 200-task comparison manifest for this dataset revision")
     if hard:
-        profile = "hard-flash-settings.json" if ns.mode == "hard-flash" else "hard-settings.json"
-        SETTINGS.update(json.loads((CI / profile).read_text()))
-        task_total = 51 if ns.mode == "hard-flash" else len(TASKS)
+        if droid:
+            task_total = len(comparison_tasks)
+        else:
+            profile = "hard-flash-settings.json" if ns.mode == "hard-flash" else "hard-settings.json"
+            SETTINGS.update(json.loads((CI / profile).read_text()))
+            task_total = 51 if ns.mode == "hard-flash" else len(TASKS)
         if not (1 <= ns.first_task <= ns.first_task + ns.task_count - 1 <= task_total and 1 <= ns.trial <= 3):
             parser.error("Specify a valid HARD task range and trial number from 1 to 3")
         ceiling = Decimal(str(SETTINGS["hard_phase_ceiling_usd"]))
@@ -283,7 +301,8 @@ def main():
             raise SystemExit(str(exc)) from None
         write_json(out / "inventory.json", {
             "model_count": len(models),
-            "matching_ids": sorted(i for i in models if re.search(r"(glm[- ]?5\.3|deepseek[-_/ ]?v4\.1|kimi[-_ ]?k3)", i, re.I)),
+            "matching_ids": sorted(i for i in models if i == SETTINGS["model"] or re.search(
+                r"(glm[- ]?5\.3|deepseek[-_/ ]?v4\.1|kimi[-_ ]?k3)", i, re.I)),
         })
         if ns.mode == "inventory":
             return
@@ -320,18 +339,22 @@ def main():
     official_ids = source.decode().splitlines()
     if len(official_ids) != 51 or len(set(official_ids)) != 51 or len(set(TASKS)) != 10 or not set(TASKS) <= set(official_ids):
         raise SystemExit("Invalid official HARD-51 list or preregistered subset")
-    task_order = TASKS + [task for task in official_ids if task not in TASKS] if ns.mode == "hard-flash" else TASKS
+    task_order = TASKS
+    if droid:
+        task_order = comparison_tasks
+    elif ns.mode == "hard-flash":
+        task_order = TASKS + [task for task in official_ids if task not in TASKS]
     first_two = TASKS[:2]
     control_run = ns.mode in {"controls", "controls-second"}
     selected = {
         "plan": TASKS, "pilot": first_two, "resume-pilot": first_two,
         "second": TASKS[1:2], "controls-second": TASKS[1:2],
-    }.get(ns.mode, TASKS[:1])
+    }.get(ns.mode, task_order[:1])
     if hard:
         selected = task_order[ns.first_task - 1:ns.first_task - 1 + ns.task_count]
     attempts = [
-        (task, HARNESSES[(task_order.index(task) + shift + ns.trial - 1) % len(HARNESSES)])
-        for task in selected for shift in range(len(HARNESSES))
+        (task, harnesses[(task_order.index(task) + shift + ns.trial - 1) % len(harnesses)])
+        for task in selected for shift in range(len(harnesses))
     ]
     if ns.mode == "resume-pilot":
         attempts = [(task, harness) for task, harness in attempts
@@ -347,11 +370,11 @@ def main():
     hard_spend = Decimal(0)
     hard_stop = ""
     hard_deadline = time.monotonic() + 330 * 60
-    block_seconds = 900 + 1500 + len(HARNESSES) * (
+    block_seconds = 900 + 1500 + len(harnesses) * (
         SETTINGS["agent_seconds"] + SETTINGS["verifier_seconds"] + 120
     )
     for ix, task in enumerate(selected):
-        if hard and hard_spend + Decimal(str(SETTINGS["attempt_cap_usd"])) * len(HARNESSES) > ns.phase_budget:
+        if hard and hard_spend + Decimal(str(SETTINGS["attempt_cap_usd"])) * len(harnesses) > ns.phase_budget:
             hard_stop = "budget_before_next_matched_block"
             break
         if hard and time.monotonic() + block_seconds > hard_deadline:
@@ -378,16 +401,17 @@ def main():
             if [controls[name]["resolved"] for name in ("empty", "oracle")] != [0, 1]:
                 raise SystemExit("Official verifier controls did not match the release gate")
         with (task_dir / "build.log").open("wb") as log:
-            docker("build", "--platform", "linux/amd64", "--build-arg", "OFFICIAL_IMAGE=" + official_image,
+            droid_build = ["--build-arg", "DROID_VERSION=" + SETTINGS["droid_version"]] if droid else []
+            docker("build", "--platform", "linux/amd64", "--build-arg", "OFFICIAL_IMAGE=" + official_image, *droid_build,
                    "-t", image, CI, stdout=log, stderr=subprocess.STDOUT, timeout=1500, check=True)
         if control_run:
             break
         for _, harness in (item for item in attempts if item[0] == task):
-            print(f"Starting {harness} on HARD-51 task {task_order.index(task) + 1}", flush=True)
+            print(f"Starting {harness} on task {task_order.index(task) + 1}", flush=True)
             run_dir = task_dir / harness
             run_dir.mkdir()
-            row = run_agent(image, official_image, harness, config, tests, run_dir, env, probe=ns.mode == "smoke")
-            if ns.mode == "smoke":
+            row = run_agent(image, official_image, harness, config, tests, run_dir, env, probe=probe)
+            if probe:
                 probes[harness] = row
                 write_json(out / "smoke.json", probes)
                 continue
@@ -408,7 +432,7 @@ def main():
             if ns.mode == "resume-pilot" and task == first_two[0] and row["resolved"] is None:
                 raise SystemExit("Mini-SWE-agent retry needs diagnosis before the second task")
         shutil.rmtree(tests)
-    if ns.mode == "smoke" and not all(row["endpoint_reached"] for row in probes.values()):
+    if probe and (set(probes) != set(harnesses) or not all(row["endpoint_reached"] for row in probes.values())):
         raise SystemExit("One or more harnesses could not reach the offline relay")
     if hard:
         write_json(out / "budget.json", {

@@ -33,6 +33,7 @@ case "$1" in
   pi) args=(pi --print --mode json --no-session --no-extensions --no-skills --no-prompt-templates --provider ht --model "$MODEL_ID" --thinking off "$prompt");;
   opencode) args=(/opt/harness/node_modules/opencode-linux-x64/bin/opencode run --format json --model "ht/$MODEL_ID" -- "$prompt");;
   mini-swe-agent) args=(mini-swe-agent --yolo --exit-immediately --model "openai/$MODEL_ID" --task "$prompt" --output /job/trajectory.json --config /run-config/mini.yaml);;
+  droid) args=(droid exec --settings /run-config/droid-settings.json --model custom:HarnessTwin-0 --output-format stream-json --auto medium --file /run-config/instruction.md);;
   *) exit 2;;
 esac
 set +e
