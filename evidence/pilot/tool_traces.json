@@ -1,0 +1,95 @@
+[
+  {
+    "source_run": "45747712965",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "pi",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "length",
+    "tool_records_by_name": {
+      "bash": 11,
+      "read": 3
+    },
+    "tool_failures_observed": 1,
+    "successful_tool_after_failure": true
+  },
+  {
+    "source_run": "45747712965",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "opencode",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "length",
+    "tool_records_by_name": {
+      "bash": 2,
+      "read": 2
+    },
+    "tool_failures_observed": 0,
+    "successful_tool_after_failure": null
+  },
+  {
+    "source_run": "45747712965",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "mini-swe-agent",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "RuntimeError",
+    "tool_records_by_name": {},
+    "tool_failures_observed": 0,
+    "successful_tool_after_failure": null
+  },
+  {
+    "source_run": "45748668508",
+    "task_id": "instance_qutebrowser__qutebrowser-3e21c8214a998cb1058defd15aabb24617a76402-v5fc38aaf22415ab0b70567368332beee7955b367",
+    "harness": "mini-swe-agent",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "LimitsExceeded",
+    "tool_records_by_name": {
+      "bash": 44
+    },
+    "tool_failures_observed": 6,
+    "successful_tool_after_failure": true
+  },
+  {
+    "source_run": "45748668508",
+    "task_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+    "harness": "opencode",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "length",
+    "tool_records_by_name": {
+      "read": 5,
+      "bash": 3
+    },
+    "tool_failures_observed": 1,
+    "successful_tool_after_failure": true
+  },
+  {
+    "source_run": "45748668508",
+    "task_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+    "harness": "mini-swe-agent",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "RepeatedFormatError",
+    "tool_records_by_name": {
+      "bash": 32
+    },
+    "tool_failures_observed": 0,
+    "successful_tool_after_failure": null
+  },
+  {
+    "source_run": "45748668508",
+    "task_id": "instance_internetarchive__openlibrary-322d7a46cdc965bfabbf9500e98fde098c9d95b2-v13642507b4fc1f8d234172bf8129942da2c2ca26",
+    "harness": "pi",
+    "trial": 1,
+    "trace_available": true,
+    "terminal_reason": "length",
+    "tool_records_by_name": {
+      "bash": 4,
+      "read": 4
+    },
+    "tool_failures_observed": 0,
+    "successful_tool_after_failure": null
+  }
+]

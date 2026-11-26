@@ -28,6 +28,7 @@ Use `controls-second` to replay the clean and reference patches for the second p
 
 ```sh
 python3 ci/collect_pilot.py FIRST_RUN=first.zip RESUME_RUN=resume.zip --out pilot-results
+python3 ci/trace_summary.py FIRST_RUN=first.zip RESUME_RUN=resume.zip --out pilot-results/tool_traces.json
 python3 ci/plot_pilot.py pilot-results/results.json pilot-results/measurements.svg
 ```
 
