@@ -102,7 +102,7 @@ def prepare_task(dataset, task, run_dir):
     env, read = task_data(dataset, task)
     config = run_dir / "config"
     config.mkdir(parents=True)
-    for name in ("agent.sh", "mini.yaml", "loopback.mjs"):
+    for name in ("agent.sh", "mini.yaml", "loopback.mjs", "compact-pi-trace.mjs"):
         shutil.copyfile(CI / name, config / name)
     (config / "instruction.md").write_bytes(read("instruction.md") + NETWORK_RULES.encode())
     prepare_model_config(config)
@@ -198,7 +198,8 @@ def run_agent(image, official_image, harness, config, tests, run_dir, env, *, pr
                                          (traces, "/job", "rw")],
                                  cpus=env["cpus"], memory=env["memory_mb"],
                                  log=run_dir / "agent.log", timeout=agent_limit + 90,
-                                 extra=["-e", "MODEL_ID=" + SETTINGS["model"]])
+                                 extra=["-e", "MODEL_ID=" + SETTINGS["model"], "-e",
+                                        "COMPACT_PI_TRACE=" + str(int(bool(SETTINGS.get("compact_pi_trace"))))])
             finally:
                 relay.shutdown()
                 server.join()

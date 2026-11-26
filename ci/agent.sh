@@ -36,7 +36,11 @@ case "$1" in
   *) exit 2;;
 esac
 set +e
-timeout -k 10 "$2" "${args[@]}" </dev/null
+if [ "$1" = pi ] && [ "${COMPACT_PI_TRACE:-0}" = 1 ]; then
+  timeout -k 10 "$2" "${args[@]}" </dev/null | node /run-config/compact-pi-trace.mjs
+else
+  timeout -k 10 "$2" "${args[@]}" </dev/null
+fi
 rc=$?
 set -e
 printf '%s\n' "$rc" > /job/agent-exit.txt
